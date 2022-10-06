@@ -49,16 +49,18 @@ summary(twofold)
 #> Formula: real_wage ~ age | female
 #> Data: chicago_long
 #> 
-#> mean(real_wage|female==0) = 17.52
-#> mean(real_wage|female==1) = 13.69
+#> Descriptives
+#>             n    %n mean(real_wage)
+#> female==0 412 57.9%           17.52
+#> female==1 300 42.1%           13.69
 #> 
 #> Gap: 3.83
 #> % Diff: 21.88%
-#>               coefficient     %
-#> explained            0.19  5.0%
-#> unexplained          3.64 95.0%
-#> unexplained_a        0.00  0.0%
-#> unexplained_b        3.64 95.0%
+#>               coefficient   % of gap
+#> explained            0.19       5.0%
+#> unexplained          3.64      95.0%
+#> unexplained_a        0.00       0.0%
+#> unexplained_b        3.64      95.0%
 ```
 
 In addition, coefficients can be extracted vor the variable-level
@@ -89,21 +91,23 @@ coef(twofold)
 ### Threefold decomposition
 
 ``` r
-threefold = OaxacaBlinderDecomp(real_wage ~ age | male, chicago_long, type = "threefold")
+threefold = OaxacaBlinderDecomp(real_wage ~ age | female, chicago_long, type = "threefold")
 summary(threefold)
 #> Oaxaca Blinder Decomposition model
 #> ----------------------------------
 #> Type: threefold
-#> Formula: real_wage ~ age | male
+#> Formula: real_wage ~ age | female
 #> Data: chicago_long
 #> 
-#> mean(real_wage|male==1) = 17.52
-#> mean(real_wage|male==0) = 13.69
+#> Descriptives
+#>             n    %n mean(real_wage)
+#> female==0 412 57.9%           17.52
+#> female==1 300 42.1%           13.69
 #> 
 #> Gap: 3.83
 #> % Diff: 21.88%
-#>              coefficient     %
-#> endowments          0.19  4.9%
-#> coefficients        3.64 94.9%
-#> interaction         0.01  0.1%
+#>              coefficient   % of gap
+#> endowments          0.19       4.9%
+#> coefficients        3.64      94.9%
+#> interaction         0.01       0.1%
 ```
