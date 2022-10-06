@@ -20,9 +20,9 @@ summary.OaxacaBlinderDecomp <- function(x) {
   n_tbl = table(x$meta$data[[group_var]])
   pct_tbl = sprintf("%.1f%%", 100*n_tbl / sum(n_tbl))
   npct_df = setNames(data.frame(n_tbl, pct_tbl),  c("group", "n", "%n")) 
-  rownames(npct_df) = npct_df$group
+  rownames(npct_df) = as.character(npct_df$group)
   npct_df$group = NULL
-  npct_df = npct_df[c(group1, group2), ]
+  npct_df = npct_df[as.character(c(group1, group2)), ]
   npct_df[[paste("mean(", dep_var, ")", sep="")]] = c(
     round(x$gaps$EY_a, digits = 2),
     round(x$gaps$EY_b, digits = 2)
