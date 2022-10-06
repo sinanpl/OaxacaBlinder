@@ -142,7 +142,7 @@ calculate_coefs <- function(X_averages, betas, type) {
 
     ENDOW = (EX_a - EX_b) * B_b
     COEFF = EX_b * (B_a - B_b)
-    INTER = (EX_a - EX_b) - (B_a - B_b)
+    INTER = (EX_a - EX_b) * (B_a - B_b)
 
     OVERALL_ENDOW = sum(ENDOW)
     OVERALL_COEFF = sum(COEFF)
