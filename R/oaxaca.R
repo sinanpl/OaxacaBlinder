@@ -208,9 +208,9 @@ calculate_coefs <- function(X_averages, betas, type) {
 #' @param type: the decomposition type: `twofold` or `threefold`
 #' @export 
 OaxacaBlinderDecomp <- function(formula, data, type = "twofold") {
-  
   dataset_name = deparse(substitute(data))
-  gvar_to_num = modify_group_var_to_dummy(data, formula)
+  input_data=data
+  gvar_to_num = modify_group_var_to_dummy(input_data, formula)
   data = gvar_to_num$data
   model_frames <- make_model_frames(formula, data)
   fitted_models <- fit_models(model_frames, dep_var = as.character(formula)[2])
@@ -224,7 +224,8 @@ OaxacaBlinderDecomp <- function(formula, data, type = "twofold") {
     group_levels = gvar_to_num$group_levels,
     formula = deparse(formula),
     formula_components = parse_formula(formula), 
-    data = dataset_name
+    dataset_name = dataset_name, 
+    data = input_data
   )
 
   class(results) <- "OaxacaBlinderDecomp"
