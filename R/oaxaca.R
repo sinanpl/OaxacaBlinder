@@ -1,26 +1,4 @@
-group_var_to_numeric = function(data, formula){
-  group_var = parse_formula(formula)$group_var
 
-  if (all(sort(unique(data[[group_var]])) == c(0, 1))){
-    data_out = data
-    dv_lev = NULL
-  } else {
-    data[[group_var]] = factor(data[[group_var]])
-    dv_lev = levels(data[[group_var]])
-    message("Recoding grouping variables")
-    message(paste(dv_lev, 0:1, sep=" -> ", collapse="\n"))
-    data[[group_var]] = as.integer(data[[group_var]]) - 1
-    data_out = data
-  }
-
-  list(
-    data = data_out, 
-    group_levels = dv_lev
-  )
-
-}
-
-# parse formula -----------------------------------------------------------
 parse_formula <- function(formula) {
   # convert to character and split in depvar, indepvar and groupvar
   fml_str <- as.character(formula)
@@ -42,13 +20,43 @@ parse_formula <- function(formula) {
   )
 }
 
+modify_group_var_to_dummy = function(data, formula){
+
+  # parse fml for group/dep var
+  fml_comp = parse_formula(formula)
+  group_var = fml_comp$group_var
+  dep_var = fml_comp$dep_var
+
+  stopifnot("Grouping variable should have 2 unique values" = {
+    g = data[[group_var]]
+    length(unique(g)) == 2
+  })
+
+  # modify group var such that group0 (reference) is the group that has a higher dep_var avg
+  dep_var_avgs = aggregate(data[[dep_var]], list(gr=data[[group_var]]), FUN=mean, na.rm=TRUE) 
+  dep_var_avgs = dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE), ]
+
+  group1 = dep_var_avgs$gr[1] # higher dep_var avg
+  group2 = dep_var_avgs$gr[2] # lower dep_var avg
+
+  # modify data; 0 represent the reference (higher depvar group)
+  data[[group_var]] = ifelse(data[[group_var]] == group1, 0, 1)
+
+  # return with levels specification for metainfo
+  list(
+    data = data, 
+    group_levels = c(group1, group2)
+  )
+
+}
+
 calculate_gap <- function(formula, data) {
   fml_comp <- parse_formula(formula)
 
   idx <- data[[fml_comp$group_var]] == 0
 
-  EY_a <- mean(data[idx, ][[fml_comp$dep_var]])
-  EY_b <- mean(data[!idx, ][[fml_comp$dep_var]])
+  EY_a <- mean(data[idx, ][[fml_comp$dep_var]], na.rm = TRUE)
+  EY_b <- mean(data[!idx, ][[fml_comp$dep_var]], na.rm = TRUE)
 
   gap <- EY_a - EY_b
   pct_gap <- gap / EY_a
@@ -61,7 +69,6 @@ calculate_gap <- function(formula, data) {
   )
 }
 
-# make X / y data for pooled and group specific ---------------------------
 make_model_frames <- function(formula, data) {
   # get formula components
   fml_comp <- parse_formula(formula)
@@ -99,14 +106,12 @@ make_model_frames <- function(formula, data) {
   model_frames
 }
 
-# fit models --------------------------------------------------------------
 fit_models <- function(design_matrices, dep_var) {
   lapply(design_matrices, function(frame) {
     lm(as.formula(paste(dep_var, "~ .")), data = frame)
   })
 }
 
-# extract model matrix averages -------------------------------------------
 extract_betas_X_averages <- function(fitted_models) {
   inner_return <- lapply(fitted_models, function(model) {
     betas <- coef(model)
@@ -123,7 +128,6 @@ extract_betas_X_averages <- function(fitted_models) {
   list(betas = betas, EX = EX)
 }
 
-# calculation of coefs ----------------------------------------------------
 calculate_coefs <- function(X_averages, betas, type) {
 
   # extract model matrix averages
@@ -195,7 +199,6 @@ calculate_coefs <- function(X_averages, betas, type) {
   )
 }
 
-# compile twofold ---------------------------------------------------------
 #' @title OaxacaBlinderDecomp
 #' @param formula: formula object specifying the model. The formula should be 
 #' specified as: dep_var ~ x_var1 + x_var2 + ... x_varK | grouping_variable
@@ -207,7 +210,7 @@ calculate_coefs <- function(X_averages, betas, type) {
 OaxacaBlinderDecomp <- function(formula, data, type = "twofold") {
   
   dataset_name = deparse(substitute(data))
-  gvar_to_num = group_var_to_numeric(data, formula)
+  gvar_to_num = modify_group_var_to_dummy(data, formula)
   data = gvar_to_num$data
   model_frames <- make_model_frames(formula, data)
   fitted_models <- fit_models(model_frames, dep_var = as.character(formula)[2])
@@ -220,6 +223,7 @@ OaxacaBlinderDecomp <- function(formula, data, type = "twofold") {
     type = type,
     group_levels = gvar_to_num$group_levels,
     formula = deparse(formula),
+    formula_components = parse_formula(formula), 
     data = dataset_name
   )
 

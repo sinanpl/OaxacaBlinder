@@ -10,8 +10,14 @@ print.OaxacaBlinderDecomp <- function(x) {
 #' @export
 summary.OaxacaBlinderDecomp <- function(x) {
   print(x)
-  cat("\n\nAvg Group 1:", round(x$gaps$EY_a, digits = 2))
-  cat("\nAvg Group 2:", round(x$gaps$EY_b, digits = 2))
+  fml_comp = x$meta$formula_components
+  dep_var = fml_comp$dep_var
+  group_var = fml_comp$group_var
+  group1 = x$meta$group_levels[1]
+  group2 = x$meta$group_levels[2]
+  
+  cat(sep = "", "\n\nmean(", dep_var, "|", group_var, "==", group1, ") = ", round(x$gaps$EY_a, digits = 2))
+  cat(sep = "",   "\nmean(", dep_var, "|", group_var, "==", group2, ") = ", round(x$gaps$EY_b, digits = 2))
   cat("\n\nGap:", round(x$gaps$gap, digits = 2))
   cat("\n% Diff:", sprintf("%.2f%%", 100 * x$gaps$pct_gap))
   cat("\n")
