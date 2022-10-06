@@ -26,6 +26,7 @@ It aims to provide a more intuitive interface in R
 You can install the development version of OaxacaBlinder like so:
 
 ``` r
+# install.packages("remotes")
 remotes::install_github("SinanPolatoglu/OaxacaBlinder")
 ```
 

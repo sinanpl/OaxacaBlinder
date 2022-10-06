@@ -14,6 +14,7 @@ This is an R implementation of the bare-bones version of
 You can install the development version of OaxacaBlinder like so:
 
 ``` r
+# install.packages("remotes")
 remotes::install_github("SinanPolatoglu/OaxacaBlinder")
 ```
 
