@@ -16,14 +16,21 @@ knitr::opts_chunk$set(
 # OaxacaBlinder
 
 <!-- badges: start -->
+
+[![experimental](http://badges.github.io/stability-badges/dist/experimental.svg)](http://github.com/badges/stability-badges)
+
 <!-- badges: end -->
 
-This is an R implementation of the bare-bones version of `OaxacaBlinder`.
-It aims to provide a more intuitive interface in R
+This is an R implementation of `OaxacaBlinder` decomposition that comes with
+
+- correction for dummy encoding baseline with multiple factors
+- more convenient output formatting
+
+Please also check the stable `oaxaca` package on CRAN.
 
 ## Installation
 
-You can install the development version of OaxacaBlinder like so:
+You can install the development version of `OaxacaBlinder` like so:
 
 ``` r
 # install.packages("remotes")
@@ -32,18 +39,30 @@ remotes::install_github("SinanPolatoglu/OaxacaBlinder")
 
 ## Example
 
+Using the chicago dataset from the `oaxaca` package
+
 ```{r}
 library(OaxacaBlinder)
 dplyr::glimpse(chicago_long)
 ```
 
-The formula interface is similar to the `oaxaca` package.
-It should be specified as `dependent_var ~ x_var1 + x_var1 + ... + x_varK | group_var`.
 
 ### Twofold decomposition
 
+- The formula interface is similar to the `oaxaca` package: it should be specified as `dependent_var ~ x_var1 + x_var1 + ... + x_varK | group_var`.
+- OaxacaBlinder is capable of correcting for the ommitted baseline bias for multipe sets of factor variables with the `baseline_invariant=TRUE`
+- The `pooled` argument sets what reference $\beta_R$:
+  - `neumark`: The parameters of a model **excluding** the group variable 
+  - `jann`: The parameters of a model **including** the group variable 
+
 ```{r}
-twofold = OaxacaBlinderDecomp(real_wage ~ age | female, chicago_long, type = "twofold")
+twofold = OaxacaBlinderDecomp(
+  formula = real_wage ~ age + education | female, 
+  data = chicago_long, 
+  type = "twofold", 
+  baseline_invariant = TRUE,
+  n_bootstraps = 100
+)
 summary(twofold)
 ```
 
@@ -53,16 +72,21 @@ In addition, coefficients can be extracted vor the variable-level estimates
 coef(twofold)
 ```
 
-The interface supports supplying factor variables to the formula and `x_var*` can represent a nominal variable, such as `education` below.
+Or with bootstrapped confidence intervals for variable level results
 
 ```{r}
-twofold = OaxacaBlinderDecomp(real_wage ~ age + education | female, chicago_long, type = "twofold")
-coef(twofold)
+coef(twofold, ci=TRUE)
 ```
 
 ### Threefold decomposition
 
 ```{r}
-threefold = OaxacaBlinderDecomp(real_wage ~ age | female, chicago_long, type = "threefold")
+threefold = OaxacaBlinderDecomp(
+  real_wage ~ age + education | female, chicago_long, 
+  type = "twofold",
+  pooled = "jann",
+  baseline_invariant = TRUE
+)
 summary(threefold)
+coef(threefold)
 ```
