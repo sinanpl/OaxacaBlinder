@@ -40,10 +40,34 @@ summary.OaxacaBlinderDecomp <- function(x) {
   out$pct = round(out$pct, 3)
   out$pct = sprintf("%.1f%%", out$pct)
   colnames(out) = c("coefficient", "  % of gap")
+
+  if (!is.null(x$bootstraps)){
+    out = cbind(out, x$bootstraps$overall)
+  }
+
   print(out)
   invisible(x)
 }
 #' @export
-coef.OaxacaBlinderDecomp <- function(x) {
-  x$varlevel
+coef.OaxacaBlinderDecomp <- function(x, ci = FALSE) {
+  estimates = x$varlevel
+  
+  if (ci && !is.null(x$bootstraps)){
+
+    # reshape estimates from wide to long
+    coeftypes = colnames(estimates)
+    nterms = nrow(estimates)
+    estimates = as.data.frame(estimates)
+    estimates[, "term"] = rownames(estimates)
+    estimates = reshape(estimates, direction ="long", v.names="coefficient", varying=1:4)
+    estimates['coef_type'] = rep(coeftypes, rep(nterms, 4))
+    estimates = estimates[c("coef_type", "term", "coefficient")]
+    rownames(estimates) = NULL
+
+    # join point estimates + ci's
+    bs_varlevel = merge(estimates, x$bootstraps$varlevel)
+    return(bs_varlevel)
+  }
+  
+  estimates
 }
