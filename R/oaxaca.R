@@ -275,14 +275,47 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
       ))
 }
 
-#' @title OaxacaBlinderDecomp
-#' @param formula: formula object specifying the model. The formula should be 
-#' specified as: dep_var ~ x_var1 + x_var2 + ... x_varK | grouping_variable
-#' factor variable are supported by default and can be inserted in the formula
-#' without encoding manually
-#' @param data: a data.frame
-#' @param type: the decomposition type: `twofold` or `threefold`
-#' @export 
+
+#' Run a Blinder-Oaxaca decomposition
+#'
+#' @param formula A formula, specified as specifying the model, specified as:
+#'   dep_var ~ x_var1 + x_var2 + ... x_varK | grouping_variable.
+#' @param data A data frame.
+#' @param type Type of decomposition to run: either "twofold" (the default) or
+#'   "threefold".
+#' @param pooled \code{neumark} (the default) to exclude the group variable from
+#'   the model, or \code{jann}: to include the group variable.
+#' @param baseline_invariant Correct for the omitted baseline bias for all
+#'   factor variables?
+#' @param n_bootstraps Bootstrap repetitions to use when calculating standard
+#'   errors.
+#' @param conf_probs CI boundaries for bootstrapped standard errors.
+#'
+#' @return A list with elements \code{overall}, \code{varlevel}, \code{gaps},
+#'   \code{meta}, and \code{bootstraps}, which can be queried with
+#'   \code{summary()} and \code{coef()}.
+#' @export
+#'
+#' @examples
+#' twofold = OaxacaBlinderDecomp(
+#'   formula = real_wage ~ age + education | female,
+#'   data = chicago_long,
+#'   type = "twofold",
+#'   baseline_invariant = TRUE,
+#'   n_bootstraps = 100
+#' )
+#' summary(twofold)
+#' coef(twofold)
+#' coef(twofold, ci=TRUE)
+#'
+#' threefold = OaxacaBlinderDecomp(
+#'   real_wage ~ age + education | female, chicago_long,
+#'   type = "threefold",
+#'   pooled = "jann",
+#'   baseline_invariant = TRUE
+#' )
+#' summary(threefold)
+#' coef(threefold)
 OaxacaBlinderDecomp <- function(formula, data, type = "twofold", pooled = "neumark", baseline_invariant=FALSE, n_bootstraps=NULL, conf_probs=c(.025, .975)) {
   dataset_name = deparse(substitute(data))
   input_data=data
