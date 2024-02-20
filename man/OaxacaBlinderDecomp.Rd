@@ -15,8 +15,8 @@ OaxacaBlinderDecomp(
 )
 }
 \arguments{
-\item{formula}{A formula, specified as specifying the model, specified as:
-dep_var ~ x_var1 + x_var2 + ... x_varK | grouping_variable.}
+\item{formula}{A formula specifying the model as: \code{dependent_var ~
+x_var1 + x_var1 + ... + x_varK | group_var}.}
 
 \item{data}{A data frame.}
 
@@ -24,7 +24,7 @@ dep_var ~ x_var1 + x_var2 + ... x_varK | grouping_variable.}
 "threefold".}
 
 \item{pooled}{\code{neumark} (the default) to exclude the group variable from
-the model, or \code{jann}: to include the group variable.}
+the model, or \code{jann} to include the group variable.}
 
 \item{baseline_invariant}{Correct for the omitted baseline bias for all
 factor variables?}
