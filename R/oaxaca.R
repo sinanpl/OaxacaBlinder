@@ -284,7 +284,7 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
 #' @param type Type of decomposition to run: either "twofold" (the default) or
 #'   "threefold".
 #' @param pooled \code{neumark} (the default) to exclude the group variable from
-#'   the model, or \code{jann}: to include the group variable.
+#'   the model, or \code{jann} to include the group variable.
 #' @param baseline_invariant Correct for the omitted baseline bias for all
 #'   factor variables?
 #' @param n_bootstraps Bootstrap repetitions to use when calculating standard
