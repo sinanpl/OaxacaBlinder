@@ -278,8 +278,8 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
 
 #' Run a Blinder-Oaxaca decomposition
 #'
-#' @param formula A formula, specified as specifying the model, specified as:
-#'   dep_var ~ x_var1 + x_var2 + ... x_varK | grouping_variable.
+#' @param formula A formula specifying the model as: \code{dependent_var ~
+#'   x_var1 + x_var1 + ... + x_varK | group_var}.
 #' @param data A data frame.
 #' @param type Type of decomposition to run: either "twofold" (the default) or
 #'   "threefold".
