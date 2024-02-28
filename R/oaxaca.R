@@ -33,7 +33,7 @@ modify_group_var_to_dummy = function(data, formula){
   })
 
   # modify group var such that group0 (reference) is the group that has a higher dep_var avg
-  dep_var_avgs = aggregate(data[[dep_var]], list(gr=data[[group_var]]), FUN=mean, na.rm=TRUE) 
+  dep_var_avgs = aggregate(data[[dep_var]], list(gr=data[[group_var]]), FUN=mean, na.rm=TRUE)
   dep_var_avgs = dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE), ]
 
   group1 = dep_var_avgs$gr[1] # higher dep_var avg
@@ -44,7 +44,7 @@ modify_group_var_to_dummy = function(data, formula){
 
   # return with levels specification for metainfo
   list(
-    data = data, 
+    data = data,
     group_levels = c(group1, group2)
   )
 
@@ -80,7 +80,7 @@ fit_models <- function(formula, data) {
 
   # construct formulas
   fml_reg <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
-  
+
   # currently; pooled reg without group ind as suggested by Neumark (1988)
   fml_reg_pooled_neumark1988 <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
   fml_reg_pooled_jann2008 <- paste(fml_comp$dep_var, "~", fml_comp$indep_var, "+", fml_comp$group_var)
@@ -96,8 +96,8 @@ fit_models <- function(formula, data) {
   mod_pooled_jann2008 = lm(fml_reg_pooled_jann2008, data=data)
 
   return(list(
-    mod_a = mod_a, 
-    mod_b = mod_b, 
+    mod_a = mod_a,
+    mod_b = mod_b,
     mod_pooled_neumark1988 = mod_pooled_neumark1988,
     mod_pooled_jann2008 = mod_pooled_jann2008
   ))
@@ -108,9 +108,9 @@ extract_betas_EX = function(mod, baseline_invariant){
   modmat = model.matrix(mod)
   betas = coef(mod)
 
-  # if baseline variant; 
+  # if baseline variant;
   # identify factor variables and associated dummy indicators
-  # apply gardeazabal2004 ommitted baseline correction per set of dummy variables 
+  # apply gardeazabal2004 ommitted baseline correction per set of dummy variables
   if (baseline_invariant){
     # identify factor terms
     factor_variables = names(attr(modmat, "contrasts"))
@@ -144,7 +144,7 @@ extract_betas_EX = function(mod, baseline_invariant){
   EX = apply(modmat, mean, MARGIN = 2)
 
   return(list(
-    betas=betas, 
+    betas=betas,
     EX=EX
   ))
 }
@@ -255,8 +255,8 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
       lapply(varlevel_coef_names, function(coefname){
           quantile(sapply(varlevel_list, `[`, coefname, cftype), probs = conf_probs)
         }) |> setNames(varlevel_coef_names)
-      }) |> 
-      setNames(coef_types) |> 
+      }) |>
+      setNames(coef_types) |>
       lapply(rbind_list)
 
     CI_varlevel = lapply(coef_types, function(cf_type){
@@ -266,11 +266,11 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
         x["term"] = rownames(x)
         rownames(x) = NULL
         x[c(3,4, 1, 2)]
-      }) |> 
+      }) |>
       rbind_list()
 
       return(list(
-        overall=CI_overall, 
+        overall=CI_overall,
         varlevel=CI_varlevel
       ))
 }
@@ -331,8 +331,8 @@ OaxacaBlinderDecomp <- function(formula, data, type = "twofold", pooled = "neuma
     type = type,
     group_levels = gvar_to_num$group_levels,
     formula = deparse(formula),
-    formula_components = parse_formula(formula), 
-    dataset_name = dataset_name, 
+    formula_components = parse_formula(formula),
+    dataset_name = dataset_name,
     data = input_data
   )
 

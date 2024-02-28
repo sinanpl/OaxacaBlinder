@@ -52,14 +52,14 @@ dplyr::glimpse(chicago_long)
 - The formula interface is similar to the `oaxaca` package: it should be specified as `dependent_var ~ x_var1 + x_var1 + ... + x_varK | group_var`.
 - OaxacaBlinder is capable of correcting for the ommitted baseline bias for multipe sets of factor variables with the `baseline_invariant=TRUE`
 - The `pooled` argument sets what reference $\beta_R$:
-  - `neumark`: The parameters of a model **excluding** the group variable 
-  - `jann`: The parameters of a model **including** the group variable 
+  - `neumark`: The parameters of a model **excluding** the group variable
+  - `jann`: The parameters of a model **including** the group variable
 
 ```{r}
 twofold = OaxacaBlinderDecomp(
-  formula = real_wage ~ age + education | female, 
-  data = chicago_long, 
-  type = "twofold", 
+  formula = real_wage ~ age + education | female,
+  data = chicago_long,
+  type = "twofold",
   baseline_invariant = TRUE,
   n_bootstraps = 100
 )
@@ -82,7 +82,7 @@ coef(twofold, ci=TRUE)
 
 ```{r}
 threefold = OaxacaBlinderDecomp(
-  real_wage ~ age + education | female, chicago_long, 
+  real_wage ~ age + education | female, chicago_long,
   type = "twofold",
   pooled = "jann",
   baseline_invariant = TRUE
