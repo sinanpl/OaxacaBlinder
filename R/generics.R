@@ -19,7 +19,7 @@ summary.OaxacaBlinderDecomp <- function(x) {
   cat("\n\nDescriptives\n")
   n_tbl = table(x$meta$data[[group_var]])
   pct_tbl = sprintf("%.1f%%", 100*n_tbl / sum(n_tbl))
-  npct_df = setNames(data.frame(n_tbl, pct_tbl),  c("group", "n", "%n")) 
+  npct_df = setNames(data.frame(n_tbl, pct_tbl),  c("group", "n", "%n"))
   rownames(npct_df) = as.character(npct_df$group)
   npct_df$group = NULL
   npct_df = npct_df[as.character(c(group1, group2)), ]
@@ -29,7 +29,7 @@ summary.OaxacaBlinderDecomp <- function(x) {
   )
   rownames(npct_df) = paste(group_var, "==", rownames(npct_df), sep="")
   print(npct_df)
-  
+
   cat("\nGap:", round(x$gaps$gap, digits = 2))
   cat("\n% Diff:", sprintf("%.2f%%", 100 * x$gaps$pct_gap))
   cat("\n")
@@ -51,7 +51,7 @@ summary.OaxacaBlinderDecomp <- function(x) {
 #' @export
 coef.OaxacaBlinderDecomp <- function(x, ci = FALSE) {
   estimates = x$varlevel
-  
+
   if (ci && !is.null(x$bootstraps)){
 
     # reshape estimates from wide to long
@@ -68,6 +68,6 @@ coef.OaxacaBlinderDecomp <- function(x, ci = FALSE) {
     bs_varlevel = merge(estimates, x$bootstraps$varlevel)
     return(bs_varlevel)
   }
-  
+
   estimates
 }
