@@ -244,10 +244,10 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
 
     CI_overall = do.call(rbind, {
       lapply(coef_types, function(coeftype){
-        coeftype_estimates <- sapply(overall_level_list, `[[`, coeftype)
+        estimates <- sapply(overall_level_list, `[[`, coeftype)
         c(
-          se = sd(coeftype_estimates, na.rm = TRUE),
-          quantile(coeftype_estimates, probs = conf_probs)
+          se = sd(estimates, na.rm = TRUE),
+          quantile(estimates, probs = conf_probs)
         )
       }) |> setNames(coef_types)
     })
