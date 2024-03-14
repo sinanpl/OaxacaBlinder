@@ -8,6 +8,8 @@ OaxacaBlinderDecomp(
   formula,
   data,
   type = "twofold",
+  ref_group_auto = TRUE,
+  ref_group = TRUE,
   pooled = "neumark",
   baseline_invariant = FALSE,
   n_bootstraps = NULL,
@@ -22,6 +24,12 @@ x_var1 + x_var1 + ... + x_varK | group_var}.}
 
 \item{type}{Type of decomposition to run: either "twofold" (the default) or
 "threefold".}
+
+\item{ref_group_auto}{Show estimates from the viewpoint of the group with the
+lower mean `dependent_var`.}
+
+\item{ref_group}{Show estimates from the viewpoint of which value of
+\code{group_var}? (Ignored if \code{ref_group_auto} is \code{TRUE}.)}
 
 \item{pooled}{\code{neumark} (the default) to exclude the group variable from
 the model, or \code{jann} to include the group variable.}
