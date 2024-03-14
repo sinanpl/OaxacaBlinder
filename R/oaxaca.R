@@ -20,7 +20,7 @@ parse_formula <- function(formula) {
   )
 }
 
-modify_group_var_to_dummy = function(data, formula){
+modify_group_var_to_dummy = function(data, formula, ref_group_auto, ref_group){
 
   # parse fml for group/dep var
   fml_comp = parse_formula(formula)
@@ -31,16 +31,33 @@ modify_group_var_to_dummy = function(data, formula){
     g = data[[group_var]]
     length(unique(g)) == 2
   })
+  if (ref_group_auto) {
+    # modify group var such that group0 (reference) is the group that has a higher dep_var avg
+    dep_var_avgs = aggregate(data[[dep_var]], list(gr=data[[group_var]]), FUN=mean, na.rm=TRUE)
+    dep_var_avgs = dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE), ]
 
-  # modify group var such that group0 (reference) is the group that has a higher dep_var avg
-  dep_var_avgs = aggregate(data[[dep_var]], list(gr=data[[group_var]]), FUN=mean, na.rm=TRUE)
-  dep_var_avgs = dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE), ]
+    group1 = dep_var_avgs$gr[1] # higher dep_var avg
+    group2 = dep_var_avgs$gr[2] # lower dep_var avg
 
-  group1 = dep_var_avgs$gr[1] # higher dep_var avg
-  group2 = dep_var_avgs$gr[2] # lower dep_var avg
+    # modify data; 1 represents the reference (lower depvar group)
+    data[[group_var]] = ifelse(data[[group_var]] == group1, 0, 1)
 
-  # modify data; 0 represent the reference (higher depvar group)
-  data[[group_var]] = ifelse(data[[group_var]] == group1, 0, 1)
+  } else {
+    # Forbid groups that aren't in the data
+    if (
+      sum(data[[group_var]] == ref_group, na.rm = TRUE) <= 0 |
+        sum(data[[group_var]] != ref_group, na.rm = TRUE) <= 0
+    ) {
+      stop("Reference group should be one of two values in group_var")
+    }
+
+    group_values <- data[[group_var]] |> unique()
+    group1 <- group_values[group_values != ref_group]
+    group2 <- ref_group
+
+    # modify data; 1 represents the reference (chosen depvar group)
+    data[[group_var]] = ifelse(data[[group_var]] == ref_group, 1, 0)
+  }
 
   # return with levels specification for metainfo
   list(
@@ -283,6 +300,10 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
 #' @param data A data frame.
 #' @param type Type of decomposition to run: either "twofold" (the default) or
 #'   "threefold".
+#' @param ref_group_auto Show estimates from the viewpoint of the group with the
+#'   lower mean `dependent_var`.
+#' @param ref_group Show estimates from the viewpoint of which value of
+#'   \code{group_var}? (Ignored if \code{ref_group_auto} is \code{TRUE}.)
 #' @param pooled \code{neumark} (the default) to exclude the group variable from
 #'   the model, or \code{jann} to include the group variable.
 #' @param baseline_invariant Correct for the omitted baseline bias for all
@@ -316,10 +337,11 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
 #' )
 #' summary(threefold)
 #' coef(threefold)
-OaxacaBlinderDecomp <- function(formula, data, type = "twofold", pooled = "neumark", baseline_invariant=FALSE, n_bootstraps=NULL, conf_probs=c(.025, .975)) {
+OaxacaBlinderDecomp <- function(formula, data, type = "twofold", ref_group_auto = TRUE, ref_group = TRUE, pooled = "neumark", baseline_invariant=FALSE, n_bootstraps=NULL, conf_probs=c(.025, .975)) {
   dataset_name = deparse(substitute(data))
   input_data=data
-  gvar_to_num = modify_group_var_to_dummy(input_data, formula)
+  gvar_to_num <-
+    modify_group_var_to_dummy(input_data, formula, ref_group_auto, ref_group)
   data = gvar_to_num$data
   fitted_models <- fit_models(formula, data)
   results <- calculate_coefs(fitted_models, type, pooled, baseline_invariant)
