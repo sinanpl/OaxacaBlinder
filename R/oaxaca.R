@@ -257,7 +257,11 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
 
     CI_varlevel = lapply(coef_types, function(cftype){
       lapply(varlevel_coef_names, function(coefname){
-          quantile(sapply(varlevel_list, `[`, coefname, cftype), probs = conf_probs)
+        estimates <- sapply(varlevel_list, `[`, coefname, cftype)
+          c(
+            se = sd(estimates, na.rm = TRUE),
+            quantile(estimates, probs = conf_probs)
+          )
         }) |> setNames(varlevel_coef_names)
       }) |>
       setNames(coef_types) |>
@@ -269,7 +273,7 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
         x["coef_type"] = cf_type
         x["term"] = rownames(x)
         rownames(x) = NULL
-        x[c(3,4, 1, 2)]
+        x[c(4, 5, 1, 2, 3)]
       }) |>
       rbind_list()
 
