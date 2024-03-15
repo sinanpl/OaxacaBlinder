@@ -50,13 +50,11 @@ modify_group_var_to_dummy = function(data, formula){
 
 }
 
-calculate_gap <- function(formula, data) {
+calculate_gap <- function(formula, data_a, data_b) {
   fml_comp <- parse_formula(formula)
 
-  idx <- data[[fml_comp$group_var]] == 0
-
-  EY_a <- mean(data[idx, ][[fml_comp$dep_var]], na.rm = TRUE)
-  EY_b <- mean(data[!idx, ][[fml_comp$dep_var]], na.rm = TRUE)
+  EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
+  EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
 
   gap <- EY_a - EY_b
   pct_gap <- gap / EY_a
@@ -326,7 +324,11 @@ OaxacaBlinderDecomp <- function(formula, data, type = "twofold", pooled = "neuma
 
 
   # collect descriptives
-  results$gaps <- calculate_gap(formula, data)
+  results$gaps <- calculate_gap(
+    formula,
+    model.frame(fitted_models$mod_a),
+    model.frame(fitted_models$mod_b)
+  )
   results$meta <- list(
     type = type,
     group_levels = gvar_to_num$group_levels,
