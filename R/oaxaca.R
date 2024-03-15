@@ -231,14 +231,37 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
       idx = sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
       sample_data = data[idx, ]
       fitted_models = fit_models(formula, sample_data)
-      calculate_coefs(fitted_models, type=type, pooled=pooled, baseline_invariant=baseline_invariant)
+      out <- calculate_coefs(
+        fitted_models,
+        type = type,
+        pooled = pooled,
+        baseline_invariant = baseline_invariant
+      )
+      out$gaps <- calculate_gap(
+        formula,
+        model.frame(fitted_models$mod_a),
+        model.frame(fitted_models$mod_b)
+      )
+      out
     })
 
+    gaps_list = lapply(bs, `[[`, "gaps")
     overall_level_list = lapply(bs, `[[`, "overall")
     varlevel_list = lapply(bs, `[[`, "varlevel")
 
+    gap_types = names(gaps_list[[1]])
     coef_types = names(overall_level_list[[1]])
     varlevel_coef_names = rownames(varlevel_list[[1]])
+
+    CI_gaps <- do.call(rbind, {
+      lapply(gap_types, function(gaptype){
+        estimates <- sapply(gaps_list, `[[`, gaptype)
+        c(
+          se = sd(estimates, na.rm = TRUE),
+          quantile(estimates, probs = conf_probs)
+        )
+      }) |> setNames(coef_types)
+    })
 
     CI_overall = do.call(rbind, {
       lapply(coef_types, function(coeftype){
@@ -268,6 +291,7 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
       rbind_list()
 
       return(list(
+        gaps = CI_gaps,
         overall=CI_overall,
         varlevel=CI_varlevel
       ))
