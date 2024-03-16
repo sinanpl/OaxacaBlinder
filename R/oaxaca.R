@@ -50,13 +50,11 @@ modify_group_var_to_dummy = function(data, formula){
 
 }
 
-calculate_gap <- function(formula, data) {
+calculate_gap <- function(formula, data_a, data_b) {
   fml_comp <- parse_formula(formula)
 
-  idx <- data[[fml_comp$group_var]] == 0
-
-  EY_a <- mean(data[idx, ][[fml_comp$dep_var]], na.rm = TRUE)
-  EY_b <- mean(data[!idx, ][[fml_comp$dep_var]], na.rm = TRUE)
+  EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
+  EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
 
   gap <- EY_a - EY_b
   pct_gap <- gap / EY_a
@@ -233,14 +231,37 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
       idx = sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
       sample_data = data[idx, ]
       fitted_models = fit_models(formula, sample_data)
-      calculate_coefs(fitted_models, type=type, pooled=pooled, baseline_invariant=baseline_invariant)
+      out <- calculate_coefs(
+        fitted_models,
+        type = type,
+        pooled = pooled,
+        baseline_invariant = baseline_invariant
+      )
+      out$gaps <- calculate_gap(
+        formula,
+        model.frame(fitted_models$mod_a),
+        model.frame(fitted_models$mod_b)
+      )
+      out
     })
 
+    gaps_list = lapply(bs, `[[`, "gaps")
     overall_level_list = lapply(bs, `[[`, "overall")
     varlevel_list = lapply(bs, `[[`, "varlevel")
 
+    gap_types = names(gaps_list[[1]])
     coef_types = names(overall_level_list[[1]])
     varlevel_coef_names = rownames(varlevel_list[[1]])
+
+    CI_gaps <- do.call(rbind, {
+      lapply(gap_types, function(gaptype){
+        estimates <- sapply(gaps_list, `[[`, gaptype)
+        c(
+          se = sd(estimates, na.rm = TRUE),
+          quantile(estimates, probs = conf_probs)
+        )
+      }) |> setNames(gap_types)
+    })
 
     CI_overall = do.call(rbind, {
       lapply(coef_types, function(coeftype){
@@ -270,6 +291,7 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
       rbind_list()
 
       return(list(
+        gaps = CI_gaps,
         overall=CI_overall,
         varlevel=CI_varlevel
       ))
@@ -326,7 +348,11 @@ OaxacaBlinderDecomp <- function(formula, data, type = "twofold", pooled = "neuma
 
 
   # collect descriptives
-  results$gaps <- calculate_gap(formula, data)
+  results$gaps <- calculate_gap(
+    formula,
+    model.frame(fitted_models$mod_a),
+    model.frame(fitted_models$mod_b)
+  )
   results$meta <- list(
     type = type,
     group_levels = gvar_to_num$group_levels,
