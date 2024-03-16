@@ -260,7 +260,7 @@ get_bootstrap_ci = function(formula, data, n_bootstraps, type, pooled, baseline_
           se = sd(estimates, na.rm = TRUE),
           quantile(estimates, probs = conf_probs)
         )
-      }) |> setNames(coef_types)
+      }) |> setNames(gap_types)
     })
 
     CI_overall = do.call(rbind, {
