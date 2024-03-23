@@ -10,6 +10,6 @@ testthat::test_that("parse_formula works", {
                            dep_var = 'real_wage',
                            indep_var = 'age+education',
                            group_var = 'gender',
-                           ref_level = "male"
+                           ref_level = "female"
                          ))
 })
