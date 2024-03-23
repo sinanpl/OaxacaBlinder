@@ -36,15 +36,11 @@ validate_columns = function(data, formula) {
   )
 }
 
-calculate_gap <- function(formula, data) {
-  fml_comp <- parse_formula(data, formula)
-  group_var = fml_comp$group_var
-  reference_level = fml_comp$ref_level
+calculate_gap <- function(formula, data_a, data_b) {
+  fml_comp <- parse_formula(formula)
 
-  idx <- data[[group_var]] == reference_level
-
-  EY_a <- mean(data[idx,][[fml_comp$dep_var]], na.rm = TRUE)
-  EY_b <- mean(data[!idx,][[fml_comp$dep_var]], na.rm = TRUE)
+  EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
+  EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
 
   gap <- EY_a - EY_b
   pct_gap <- gap / EY_a
@@ -251,7 +247,11 @@ get_bootstrap_ci = function(formula,
 
   CI_overall = do.call(rbind, {
     lapply(coef_types, function(coeftype) {
-      quantile(sapply(overall_level_list, `[[`, coeftype), probs = conf_probs)
+      estimates <- sapply(overall_level_list, `[[`, coeftype)
+      c(
+        se = sd(estimates, na.rm = TRUE),
+        quantile(estimates, probs = conf_probs)
+      )
     }) |> setNames(coef_types)
   })
 
@@ -261,7 +261,11 @@ get_bootstrap_ci = function(formula,
 
   CI_varlevel = lapply(coef_types, function(cftype) {
     lapply(varlevel_coef_names, function(coefname) {
-      quantile(sapply(varlevel_list, `[`, coefname, cftype), probs = conf_probs)
+      estimates <- sapply(varlevel_list, `[`, coefname, cftype)
+        c(
+          se = sd(estimates, na.rm = TRUE),
+          quantile(estimates, probs = conf_probs)
+        )    
     }) |> setNames(varlevel_coef_names)
   }) |>
     setNames(coef_types) |>
@@ -273,7 +277,7 @@ get_bootstrap_ci = function(formula,
     x["coef_type"] = cf_type
     x["term"] = rownames(x)
     rownames(x) = NULL
-    x[c(3, 4, 1, 2)]
+    x[c(4, 5, 1, 2, 3)]
   }) |>
     rbind_list()
 
@@ -338,7 +342,11 @@ OaxacaBlinderDecomp <-
       calculate_coefs(fitted_models, type, pooled, baseline_invariant)
 
     # collect descriptives
-    results$gaps <- calculate_gap(formula, data)
+    results$gaps <- calculate_gap(
+      formula,
+      model.frame(fitted_models$mod_a),
+      model.frame(fitted_models$mod_b)
+    )
     results$meta <- list(
       type = type,
       formula = deparse(formula),
