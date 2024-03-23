@@ -53,7 +53,7 @@ modv2 = oaxaca::oaxaca(formula = formula, data = datasetv2, R=NULL)
 # helper functions for comparison -----------------------------------------
 # on overall / coefficient level
 
-compare_v1v2_overall = function(modv1, modv2=modv2){
+compare_v1v2_overall = function(modv1, modv2=modv2, type){
 
   if(type=='neumark'){
     index=5
