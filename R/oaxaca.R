@@ -1,6 +1,4 @@
-
-
-parse_formula <- function(formula) {
+parse_formula <- function(data, formula) {
   # convert to character and split in depvar, indepvar and groupvar
   fml_str <- as.character(formula)
   lhs <- fml_str[2]
@@ -11,44 +9,39 @@ parse_formula <- function(formula) {
   group_var <- rhs[2]
   rhs <- rhs[1]
 
+  # save reference level
+  ref_level = levels(data[[group_var]])[2]
+
   # returns list of character strings
-  list(dep_var = lhs,
-       indep_var = rhs,
-       group_var = group_var)
+  list(
+    dep_var = lhs,
+    indep_var = rhs,
+    group_var = group_var,
+    ref_level = ref_level
+  )
 }
 
-modify_group_var_to_dummy = function(data, formula) {
-  # parse fml for group/dep var
-  fml_comp = parse_formula(formula)
-  group_var = fml_comp$group_var
+validate_columns = function(data, formula) {
+  fml_comp <- parse_formula(data, formula)
   dep_var = fml_comp$dep_var
+  indep_var = fml_comp$indep_var
+  group_var = fml_comp$group_var
 
-  stopifnot("Grouping variable should have 2 unique values" = {
-    g = data[[group_var]]
-    length(unique(g)) == 2
-  })
-
-  # modify group var such that group0 (reference) is the group that has a higher dep_var avg
-  dep_var_avgs = aggregate(data[[dep_var]], list(gr = data[[group_var]]), FUN =
-                             mean, na.rm = TRUE)
-  dep_var_avgs = dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE),]
-
-  group1 = dep_var_avgs$gr[1] # higher dep_var avg
-  group2 = dep_var_avgs$gr[2] # lower dep_var avg
-
-  # modify data; 0 represent the reference (higher depvar group)
-  data[[group_var]] = ifelse(data[[group_var]] == group1, 0, 1)
-
-  # return with levels specification for metainfo
-  list(data = data,
-       group_levels = c(group1, group2))
-
+  # stop if data / variable are not right format
+  stopifnot(
+    "`data` should be a data.frame" = inherits(data, "data.frame"),
+    "dependent variable should be a numeric" = inherits(data[[dep_var]], "numeric"),
+    "grouping variable should be a factor with 2 levels" = inherits(data[[group_var]], "factor") &&
+      length(levels(data[[group_var]])) == 2
+  )
 }
 
 calculate_gap <- function(formula, data) {
-  fml_comp <- parse_formula(formula)
+  fml_comp <- parse_formula(data, formula)
+  group_var = fml_comp$group_var
+  reference_level = fml_comp$ref_level
 
-  idx <- data[[fml_comp$group_var]] == 0
+  idx <- data[[group_var]] == reference_level
 
   EY_a <- mean(data[idx,][[fml_comp$dep_var]], na.rm = TRUE)
   EY_b <- mean(data[!idx,][[fml_comp$dep_var]], na.rm = TRUE)
@@ -66,10 +59,12 @@ calculate_gap <- function(formula, data) {
 
 fit_models <- function(formula, data) {
   # get formula components
-  fml_comp <- parse_formula(formula)
+  fml_comp <- parse_formula(data, formula)
 
-  # filter datasets for group a/b
-  idx <- data[[fml_comp$group_var]] == 0
+  # update contrast for model fit (jann2008, including groupvar)
+  contrasts(data[[fml_comp$group_var]])  = contr.SAS(levels(data[[fml_comp$group_var]]))
+
+  idx <- data[[fml_comp$group_var]] == fml_comp$ref_level
   data_a <- data[idx,]
   data_b <- data[!idx,]
 
@@ -95,7 +90,7 @@ fit_models <- function(formula, data) {
   mod_a = lm(fml_reg, data = data_a)
   mod_b = lm(fml_reg, data = data_b)
   mod_pooled_neumark1988 = lm(fml_reg_pooled_neumark1988, data = data)
-  mod_pooled_jann2008 = lm(fml_reg_pooled_jann2008, data = data)
+  mod_pooled_jann2008 = lm(fml_reg_pooled_jann2008, data = data, contrasts = )
 
   return(
     list(
@@ -335,24 +330,22 @@ OaxacaBlinderDecomp <-
            baseline_invariant = FALSE,
            n_bootstraps = NULL,
            conf_probs = c(.025, .975)) {
+    validate_columns(data, formula)
+
     dataset_name = deparse(substitute(data))
-    input_data = data
-    gvar_to_num = modify_group_var_to_dummy(input_data, formula)
-    data = gvar_to_num$data
     fitted_models <- fit_models(formula, data)
     results <-
       calculate_coefs(fitted_models, type, pooled, baseline_invariant)
-
 
     # collect descriptives
     results$gaps <- calculate_gap(formula, data)
     results$meta <- list(
       type = type,
-      group_levels = gvar_to_num$group_levels,
       formula = deparse(formula),
-      formula_components = parse_formula(formula),
+      formula_components = parse_formula(data, formula),
       dataset_name = dataset_name,
-      data = input_data
+      data = data,
+      fitted_models = fitted_models
     )
 
 
