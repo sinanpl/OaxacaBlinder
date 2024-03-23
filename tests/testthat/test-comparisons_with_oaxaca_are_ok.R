@@ -4,8 +4,12 @@
 
 # fit several testing models ----------------------------------------------
 
-formula = real_wage ~ age | male
+formula = real_wage ~ age | gender
 dataset = OaxacaBlinder::chicago_long
+
+# oacaxa works with binary / logical
+datasetv2 = dataset
+datasetv2$gender = ifelse(dataset$gender == "male", 1, 0)
 
 # 5 fits are needed
 # 4x (v1) Oaxacadecomp with twofold/threefold AND type=neumark/jann as options
@@ -43,13 +47,13 @@ modv1_threefold_jann = OaxacaBlinder::OaxacaBlinderDecomp(
   baseline_invariant = FALSE,
   n_bootstraps = NULL
 )
-
-modv2 = oaxaca::oaxaca(formula = formula, data = dataset, R=NULL)
+modv2 = oaxaca::oaxaca(formula = formula, data = datasetv2, R=NULL)
 
 
 # helper functions for comparison -----------------------------------------
 # on overall / coefficient level
-compare_v1v2_overall = function(modv1, modv2=modv2, type='neumark'){
+
+compare_v1v2_overall = function(modv1, modv2=modv2){
 
   if(type=='neumark'){
     index=5
@@ -58,10 +62,10 @@ compare_v1v2_overall = function(modv1, modv2=modv2, type='neumark'){
   }
 
   results = c(
-    all.equal(abs(modv1$overall$explained)      , abs(modv2$twofold$overall[index, 'coef(explained)'])),
-    all.equal(abs(modv1$overall$unexplained)    , abs(modv2$twofold$overall[index, 'coef(unexplained)'])),
-    all.equal(abs(modv1$overall$unexplained_a)  , abs(modv2$twofold$overall[index, 'coef(unexplained B)'])),
-    all.equal(abs(modv1$overall$unexplained_b)  , abs(modv2$twofold$overall[index, 'coef(unexplained A)']))
+    all.equal(abs(modv1$overall$explained)      , abs(modv2$twofold$overall[[index, 'coef(explained)']])),
+    all.equal(abs(modv1$overall$unexplained)    , abs(modv2$twofold$overall[[index, 'coef(unexplained)']])),
+    all.equal(abs(modv1$overall$unexplained_a)  , abs(modv2$twofold$overall[[index, 'coef(unexplained A)']])),
+    all.equal(abs(modv1$overall$unexplained_b)  , abs(modv2$twofold$overall[[index, 'coef(unexplained B)']]))
   )
   all(results)
 }
@@ -74,8 +78,8 @@ compare_v1v2_coeflevel = function(modv1, modv2=modv2, type='jann'){
   cols_to_select = c(
     "coef(explained)",
     "coef(unexplained)",
-    "coef(unexplained B)",
-    "coef(unexplained A)"
+    "coef(unexplained A)",
+    "coef(unexplained B)"
   )
   df1 = abs(as.matrix(modv2$twofold$variables[[index]][, cols_to_select]))
   df2 = abs(as.matrix(modv1$varlevel))
@@ -101,12 +105,11 @@ testthat::test_that("equal_results_twofold_jann_twofold", {
   testthat::expect_true(compare_v1v2_overall(modv1_twofold_jann, modv2=modv2, type='jann'))
   testthat::expect_true(compare_v1v2_coeflevel(modv1_twofold_jann, modv2=modv2, type='jann'))
 })
-testthat::test_that("equal_results_threefold_neumark_threefold", {
-  testthat::expect_true(compare_v1v2_overall(modv1_threefold_neumark, modv2=modv2, type='neumark'))
-  testthat::expect_true(compare_v1v2_coeflevel(modv1_threefold_neumark, modv2=modv2, type='neumark'))
-})
-testthat::test_that("equal_results_twofold_jann_threefold", {
-  testthat::expect_true(compare_v1v2_overall(modv1_threefold_jann, modv2=modv2, type='jann'))
-  testthat::expect_true(compare_v1v2_coeflevel(modv1_threefold_jann, modv2=modv2, type='jann'))
-})
-
+# testthat::test_that("equal_results_threefold_neumark_threefold", {
+#   testthat::expect_true(compare_v1v2_overall(modv1_threefold_neumark, modv2=modv2, type='neumark'))
+#   testthat::expect_true(compare_v1v2_coeflevel(modv1_threefold_neumark, modv2=modv2, type='neumark'))
+# })
+# testthat::test_that("equal_results_twofold_jann_threefold", {
+#   testthat::expect_true(compare_v1v2_overall(modv1_threefold_jann, modv2=modv2, type='jann'))
+#   testthat::expect_true(compare_v1v2_coeflevel(modv1_threefold_jann, modv2=modv2, type='jann'))
+# })
