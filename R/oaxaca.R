@@ -37,7 +37,7 @@ validate_columns = function(data, formula) {
 }
 
 calculate_gap <- function(formula, data_a, data_b) {
-  fml_comp <- parse_formula(formula)
+  fml_comp <- parse_formula(data_a, formula)
 
   EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
   EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
