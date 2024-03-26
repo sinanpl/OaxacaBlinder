@@ -86,7 +86,7 @@ fit_models <- function(formula, data) {
   mod_a = lm(fml_reg, data = data_a)
   mod_b = lm(fml_reg, data = data_b)
   mod_pooled_neumark1988 = lm(fml_reg_pooled_neumark1988, data = data)
-  mod_pooled_jann2008 = lm(fml_reg_pooled_jann2008, data = data, contrasts = )
+  mod_pooled_jann2008 = lm(fml_reg_pooled_jann2008, data = data)
 
   return(
     list(
