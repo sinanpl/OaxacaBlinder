@@ -6,14 +6,22 @@
 
 formula = real_wage ~ age | gender
 dataset = OaxacaBlinder::chicago_long
+dataset_flipped = dataset
+levels(dataset_flipped$gender) = rev(levels(dataset_flipped$gender))
+
 
 # oacaxa works with binary / logical
 datasetv2 = dataset
-datasetv2$gender = ifelse(dataset$gender == "male", 1, 0)
+datasetv2_flipped = dataset
+datasetv2$gender = ifelse(dataset$gender == "male",   1, 0)
+datasetv2_flipped$gender = ifelse(dataset$gender == "female", 1, 0)
 
 # 5 fits are needed
 # 4x (v1) Oaxacadecomp with twofold/threefold AND type=neumark/jann as options
 # 1x (v2) oaxaca::oaxaca - this contains several runs with alternating options
+
+
+# fit models --------------------------------------------------------------
 
 modv1_twofold_neumark = OaxacaBlinder::OaxacaBlinderDecomp(
   formula=formula,
@@ -48,6 +56,26 @@ modv1_threefold_jann = OaxacaBlinder::OaxacaBlinderDecomp(
   n_bootstraps = NULL
 )
 modv2 = oaxaca::oaxaca(formula = formula, data = datasetv2, R=NULL)
+
+
+# fit models with flipped levels ------------------------------------------
+modv1_twofold_neumark_flipped = OaxacaBlinder::OaxacaBlinderDecomp(
+  formula=formula,
+  data = dataset_flipped,
+  type = 'twofold',
+  pooled = 'neumark',
+  baseline_invariant = FALSE,
+  n_bootstraps = NULL
+)
+modv1_twofold_jann_flipped = OaxacaBlinder::OaxacaBlinderDecomp(
+  formula=formula,
+  data = dataset_flipped,
+  type = 'twofold',
+  pooled = 'jann',
+  baseline_invariant = FALSE,
+  n_bootstraps = NULL
+)
+modv2_flipped = oaxaca::oaxaca(formula = formula, data = datasetv2_flipped, R=NULL)
 
 
 # helper functions for comparison -----------------------------------------
@@ -98,13 +126,30 @@ testthat::test_that("equal_results_twofold_neumark_twofold", {
   testthat::expect_true(compare_v1v2_coeflevel(modv1_twofold_neumark, modv2 = modv2, type='neumark'))
 })
 
-# commented tests that do not work yet due to
-# - name change level a / b
-# - threefold not implemented
 testthat::test_that("equal_results_twofold_jann_twofold", {
   testthat::expect_true(compare_v1v2_overall(modv1_twofold_jann, modv2=modv2, type='jann'))
   testthat::expect_true(compare_v1v2_coeflevel(modv1_twofold_jann, modv2=modv2, type='jann'))
 })
+
+# flipped twofold for jann & neumark
+# execute comparisons -----------------------------------------------------
+
+testthat::test_that("equal_results_twofold_neumark_twofold_flipped", {
+  testthat::expect_true(compare_v1v2_overall(  modv1_twofold_neumark_flipped, modv2 = modv2_flipped, type='neumark'))
+  testthat::expect_true(compare_v1v2_coeflevel(modv1_twofold_neumark_flipped, modv2 = modv2_flipped, type='neumark'))
+})
+
+testthat::test_that("equal_results_twofold_jann_twofold_flipped", {
+  testthat::expect_true(compare_v1v2_overall(modv1_twofold_jann_flipped, modv2=modv2_flipped, type='jann'))
+  testthat::expect_true(compare_v1v2_coeflevel(modv1_twofold_jann_flipped, modv2=modv2_flipped, type='jann'))
+})
+
+
+
+# commented tests that do not work yet due to
+# - name change level a / b
+# - threefold not implemented
+#
 # testthat::test_that("equal_results_threefold_neumark_threefold", {
 #   testthat::expect_true(compare_v1v2_overall(modv1_threefold_neumark, modv2=modv2, type='neumark'))
 #   testthat::expect_true(compare_v1v2_coeflevel(modv1_threefold_neumark, modv2=modv2, type='neumark'))
