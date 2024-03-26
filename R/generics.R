@@ -13,8 +13,9 @@ summary.OaxacaBlinderDecomp <- function(x) {
   fml_comp = x$meta$formula_components
   dep_var = fml_comp$dep_var
   group_var = fml_comp$group_var
-  group1 = x$meta$group_levels[1]
-  group2 = x$meta$group_levels[2]
+  group_levels = levels(x$meta$data[[group_var]])
+  group1 = group_levels[1]
+  group2 = group_levels[2]
 
   cat("\n\nDescriptives\n")
   n_tbl = table(x$meta$data[[group_var]])
