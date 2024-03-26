@@ -54,15 +54,16 @@ coef.OaxacaBlinderDecomp <- function(x, ci = FALSE) {
     # reshape estimates from wide to long
     coeftypes = colnames(estimates)
     nterms = nrow(estimates)
+    ncoeftypes = length(coeftypes)
     estimates = as.data.frame(estimates)
     estimates[, "term"] = rownames(estimates)
-    estimates = reshape(
+    estimates <- reshape(
       estimates,
-      direction = "long",
-      v.names = "coefficient",
-      varying = 1:4
+      direction ="long",
+      v.names="coefficient",
+      varying=1:ncoeftypes
     )
-    estimates['coef_type'] = rep(coeftypes, rep(nterms, 4))
+    estimates['coef_type'] = rep(coeftypes, rep(nterms, ncoeftypes))
     estimates = estimates[c("coef_type", "term", "coefficient")]
     rownames(estimates) = NULL
 
