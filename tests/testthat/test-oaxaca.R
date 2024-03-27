@@ -29,6 +29,9 @@ testthat::test_that("categorical and dummy results match", {
 
   # Set up long and dummy datasets and formulae ----
   chicago_long_mod <- chicago_long
+  chicago_long_mod$education <-
+    as.factor(chicago_long_mod$education) |>
+    relevel(ref = "advanced.degree") # force in spite of sorting
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
   chicago_mod <- chicago
   chicago_mod$too_young <- chicago_mod$age < 19
