@@ -28,21 +28,24 @@ testthat::test_that("categorical and dummy results match", {
     }
 
   # Set up long and dummy datasets and formulae ----
+
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
     relevel(ref = "advanced.degree") # force in spite of sorting
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
+
   chicago_mod <- chicago
   chicago_mod$too_young <- chicago_mod$age < 19
 
   fmla_foreign_catg <- ln_real_wage ~ education | foreign_born
   fmla_tooyoung_catg <- ln_real_wage ~ education | too_young
-  fmla_foreign <-
+
+  fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
     foreign.born
-  fmla_tooyoung <-
+  fmla_tooyoung_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
     too_young
@@ -53,7 +56,7 @@ testthat::test_that("categorical and dummy results match", {
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_foreign_catg,
-      fmla_dum = fmla_foreign,
+      fmla_dum = fmla_foreign_dum,
       obd_type = "threefold"
     )
   testthat::expect_equal(
@@ -66,7 +69,7 @@ testthat::test_that("categorical and dummy results match", {
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_foreign_catg,
-      fmla_dum = fmla_foreign,
+      fmla_dum = fmla_foreign_dum,
       obd_type = "twofold"
     )
   testthat::expect_equal(
@@ -74,13 +77,13 @@ testthat::test_that("categorical and dummy results match", {
     foreigns_3f$obd3_dum_varlevels
   )
 
-  # Test version with dropped terms ----
+  # Test with dropped terms ----
   tooyoungs_3f <-
     run_catg_and_dum(
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_tooyoung_catg,
-      fmla_dum = fmla_tooyoung,
+      fmla_dum = fmla_tooyoung_dum,
       obd_type = "threefold"
     )
   testthat::expect_equal(
@@ -93,7 +96,7 @@ testthat::test_that("categorical and dummy results match", {
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_tooyoung_catg,
-      fmla_dum = fmla_tooyoung,
+      fmla_dum = fmla_tooyoung_dum,
       obd_type = "threefold"
     )
   testthat::expect_equal(
