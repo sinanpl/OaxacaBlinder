@@ -58,6 +58,19 @@ testthat::test_that("categorical and dummy results match", {
     foreigns_3f$obd3_dum_varlevels
   )
 
+  foreigns_2f <-
+    run_catg_and_dum(
+      data_catg = chicago_long_mod,
+      data_dum = chicago_mod,
+      fmla_catg = fmla_foreign_catg,
+      fmla_dum = fmla_foreign,
+      obd_type = "twofold"
+    )
+  testthat::expect_equal(
+    foreigns_3f$obd3_catg_varlevels,
+    foreigns_3f$obd3_dum_varlevels
+  )
+
   # Test version with dropped terms ----
   tooyoungs_3f <-
     run_catg_and_dum(
@@ -70,6 +83,19 @@ testthat::test_that("categorical and dummy results match", {
   testthat::expect_equal(
     tooyoungs_3f$obd3_catg_varlevels,
     tooyoungs_3f$obd3_dum_varlevels
+  )
+
+  tooyoungs_2f <-
+    run_catg_and_dum(
+      data_catg = chicago_long_mod,
+      data_dum = chicago_mod,
+      fmla_catg = fmla_tooyoung_catg,
+      fmla_dum = fmla_tooyoung,
+      obd_type = "threefold"
+    )
+  testthat::expect_equal(
+    tooyoungs_2f$obd3_catg_varlevels,
+    tooyoungs_2f$obd3_dum_varlevels
   )
 
 })
