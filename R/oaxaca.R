@@ -148,6 +148,19 @@ extract_betas_EX = function(mod, baseline_invariant) {
               EX = EX))
 }
 
+join_terms <-
+  function(
+    x,
+    y
+  ) {
+    x_and_y <-
+      merge(x = x, y = y, by = "row.names", all = TRUE)
+    rownames(x_and_y) <- x_and_y$Row.names
+    x_and_y <- x_and_y[-1]
+
+    x_and_y
+  }
+
 calculate_coefs <-
   function(fitted_models,
            type,
@@ -171,20 +184,42 @@ calculate_coefs <-
       B_pool = r$mod_pooled_jann2008$betas[names(B_a)]
     }
 
-    if (type == "threefold") {
-      ENDOW = (EX_a - EX_b) * B_b
-      COEFF = EX_b * (B_a - B_b)
-      INTER = (EX_a - EX_b) * (B_a - B_b)
-
-      OVERALL_ENDOW = sum(ENDOW)
-      OVERALL_COEFF = sum(COEFF)
-      OVERALL_INTER = sum(INTER)
-
-      variable_level_results <- data.frame(
-        endowments = ENDOW,
-        coefficients = COEFF,
-        interaction = INTER
+    # join terms properly
+    term_types <-
+      list(
+        EX_pool = EX_pool,
+        B_pool = B_pool,
+        EX_a = EX_a,
+        B_a = B_a,
+        EX_b = EX_b,
+        B_b = B_b
       )
+    terms <-
+      Reduce(
+        join_terms,
+        mapply( # set nice column names
+          function(terms, nm) setNames(data.frame(terms), nm),
+          term_types,
+          names(term_types),
+          SIMPLIFY = FALSE
+        )
+      )
+
+    # calculate
+    if (type == "threefold") {
+      terms$endowments <- (terms$EX_a - terms$EX_b) * terms$B_b
+      terms$coefficients <- terms$EX_b * (terms$B_a - terms$B_b)
+      terms$interaction <-
+        (terms$EX_a - terms$EX_b) *
+        (terms$B_a - terms$B_b)
+
+
+      OVERALL_ENDOW <- sum(terms$endowments)
+      OVERALL_COEFF <- sum(terms$coefficients)
+      OVERALL_INTER <- sum(terms$interaction)
+
+      variable_level_results <-
+        terms[c("endowments", "coefficients", "interaction")]
 
       overall_results <- list(
         endowments = OVERALL_ENDOW,
@@ -193,23 +228,22 @@ calculate_coefs <-
       )
     } else if (type == "twofold") {
       # results by variable
-      EXPL <- (EX_a - EX_b) * B_pool
-      UNEXPL_a <- EX_a * (B_a - B_pool)
-      UNEXPL_b <- EX_b * (B_pool - B_b)
-      UNEXPL <- UNEXPL_a + UNEXPL_b
+      terms$explained <- (terms$EX_a - terms$EX_b) * terms$B_pool
+      terms$unexplained_a <- terms$EX_a * (terms$B_a - terms$B_pool)
+      terms$unexplained_b <- terms$EX_b * (terms$B_pool - terms$B_b)
+      terms$unexplained <- terms$unexplained_a + terms$unexplained_b
 
       # overall results
-      OVERALL_EXPL <- sum(EXPL)
-      OVERALL_UNEXPL_a <- sum(UNEXPL_a)
-      OVERALL_UNEXPL_b <- sum(UNEXPL_b)
-      OVERALL_UNEXPL <- sum(UNEXPL)
+      OVERALL_EXPL <- sum(terms$explained)
+      OVERALL_UNEXPL_a <- sum(terms$unexplained_a)
+      OVERALL_UNEXPL_b <- sum(terms$unexplained_b)
+      OVERALL_UNEXPL <- sum(terms$unexplained)
 
-      variable_level_results <- data.frame(
-        explained = EXPL,
-        unexplained = UNEXPL,
-        unexplained_a = UNEXPL_a,
-        unexplained_b = UNEXPL_b
-      )
+      variable_level_results <-
+        terms[
+          c("explained", "unexplained",
+            "unexplained_a", "unexplained_b")
+        ]
 
       overall_results <- list(
         explained = OVERALL_EXPL,
@@ -272,7 +306,7 @@ get_bootstrap_ci = function(formula,
         c(
           se = sd(estimates, na.rm = TRUE),
           quantile(estimates, probs = conf_probs)
-        )    
+        )
     }) |> setNames(varlevel_coef_names)
   }) |>
     setNames(coef_types) |>
