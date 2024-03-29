@@ -265,7 +265,7 @@ get_bootstrap_ci = function(formula,
         c(
           se = sd(estimates, na.rm = TRUE),
           quantile(estimates, probs = conf_probs)
-        )    
+        )
     }) |> setNames(varlevel_coef_names)
   }) |>
     setNames(coef_types) |>
@@ -290,7 +290,7 @@ get_bootstrap_ci = function(formula,
 #'
 #' @param formula A formula specifying the model as: \code{dependent_var ~
 #'   x_var1 + x_var1 + ... + x_varK | group_var}.
-#' @param data A data frame.
+#' @param data A data frame. See details section for more information
 #' @param type Type of decomposition to run: either "twofold" (the default) or
 #'   "threefold".
 #' @param pooled \code{neumark} (the default) to exclude the group variable from
@@ -304,9 +304,24 @@ get_bootstrap_ci = function(formula,
 #' @return A list with elements \code{overall}, \code{varlevel}, \code{gaps},
 #'   \code{meta}, and \code{bootstraps}, which can be queried with
 #'   \code{summary()} and \code{coef()}.
-#' @export
+#' @details
+#' \subsection{Reference level of grouping variable}{
+#'  In this package, the main function requires the grouping variable
+#'  in the data to be a factor with 2 levels. The statistical method
+#'  will calculate the gaps based on the 1st level of the factor.
 #'
+#'  Also, in case the pooled model should contain the grouping
+#'  variable, the first factor level is the level that is encoded to a dummy.
+#'
+#'  To alter this behavior and change the reference level, the factor levels
+#'  should be reversed. This can be done with an adaptation of code below.
+#'  \preformatted{
+#'  data$group_var = relevel(data$group_var, ref = levels(data$graup_var)[2])
+#'  }
+#' }
+#' @export
 #' @examples
+#' library(OaxacaBlinder)
 #' twofold = OaxacaBlinderDecomp(
 #'   formula = real_wage ~ age + education | female,
 #'   data = chicago_long,
@@ -355,7 +370,6 @@ OaxacaBlinderDecomp <-
       data = data,
       fitted_models = fitted_models
     )
-
 
     if (!is.null(n_bootstraps)) {
       bootstrap_results = get_bootstrap_ci(
