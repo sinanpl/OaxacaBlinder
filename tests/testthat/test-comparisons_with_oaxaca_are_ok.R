@@ -7,8 +7,7 @@
 formula = real_wage ~ age | gender
 dataset = OaxacaBlinder::chicago_long
 dataset_flipped = dataset
-levels(dataset_flipped$gender) = rev(levels(dataset_flipped$gender))
-
+dataset_flipped$gender = relevel(dataset_flipped$gender, ref=levels(dataset_flipped$gender)[2])
 
 # oacaxa works with binary / logical
 datasetv2 = dataset
@@ -143,7 +142,6 @@ testthat::test_that("equal_results_twofold_jann_twofold_flipped", {
   testthat::expect_true(compare_v1v2_overall(modv1_twofold_jann_flipped, modv2=modv2_flipped, type='jann'))
   testthat::expect_true(compare_v1v2_coeflevel(modv1_twofold_jann_flipped, modv2=modv2_flipped, type='jann'))
 })
-
 
 
 # commented tests that do not work yet due to
