@@ -1,5 +1,5 @@
 varlevel <-
   read_stata_estimates(
-    testthat::test_path("fixtures", "stata_baselines", "tooyoung.xlsx")
+    testthat::test_path("fixtures", "stata_results", "tooyoung.xlsx")
   )
-saveRDS(varlevel, testthat::test_path("fixtures", "stata_baselines", "tooyoung.rds"))
+saveRDS(varlevel, testthat::test_path("fixtures", "stata_results", "tooyoung.rds"))

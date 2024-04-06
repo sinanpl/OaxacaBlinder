@@ -5,7 +5,7 @@ names(chicago_mod) <- gsub("\\.", "_", names(chicago_mod))
 
 dta_path <-
   testthat::test_path(
-    "fixtures", "stata_baselines", "chicago_mod.dta"
+    "fixtures", "stata_results", "chicago_mod.dta"
   )
 
 chicago_mod |> haven::write_dta(dta_path)
@@ -20,7 +20,7 @@ make_decomp_dofile(
   command = command,
   do_path =
     testthat::test_path(
-      "fixtures", "stata_baselines", "tooyoung.do"
+      "fixtures", "stata_results", "tooyoung.do"
     ),
   dta_file = basename(dta_path),
   est_file = "tooyoung"

@@ -15,10 +15,10 @@ test_that("decomp with zero-variance IVs matches Stata", {
       type = "threefold"
     )
 
-  # Get the same thing from saved Stata baseline
+  # Get the same thing from saved Stata baseline results
   tooyoung_stata <-
     readRDS(
-      testthat::test_path("fixtures", "stata_baselines", "tooyoung.rds")
+      testthat::test_path("fixtures", "stata_results", "tooyoung.rds")
     )
 
   testthat::expect_equal(
