@@ -288,7 +288,7 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   stata_obd_ests <- stata_obd[order(rownames(stata_obd)), ]
 
   testthat::expect_equal(
-    obd$varlevel,
-    stata_obd
+    obd_ests,
+    stata_obd_ests
   )
 })
