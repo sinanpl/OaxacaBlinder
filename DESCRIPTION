@@ -15,7 +15,6 @@ Suggests:
     readxl,
     rmarkdown,
     testthat (>= 3.0.0)
->>>>>>> stata_io
 VignetteBuilder: knitr
 Depends:
     R (>= 2.10)
