@@ -240,21 +240,23 @@ test_that("0-variance dummy IV results match Stata", {
     LTHS + some_college + college + high_school |
     too_young
 
-  obd_tooyoung <-
+  obd <-
     OaxacaBlinderDecomp(
       fmla_tooyoung_dum,
       chicago_mod,
       type = "threefold"
     )
+  obd_ests <- obd$varlevel[order(rownames(obd$varlevel)), ]
 
   # Get the same thing from saved Stata baseline results
   stata_dir <-
     testthat::test_path("fixtures", "stata_results", "tooyoung_dum")
-  tooyoung_stata <- readRDS(file.path(stata_dir, "tooyoung.rds"))
+  stata_obd <- readRDS(file.path(stata_dir, "tooyoung.rds"))
+  stata_obd_ests <- stata_obd[order(rownames(stata_obd)), ]
 
   testthat::expect_equal(
-    obd_tooyoung$varlevel,
-    tooyoung_stata
+    obd_ests,
+    stata_obd_ests
   )
 })
 
@@ -271,6 +273,7 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
       baseline_invariant = TRUE,
       type = "threefold"
     )
+  # Match and sort rownames
   obd_ests <- obd$varlevel
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
