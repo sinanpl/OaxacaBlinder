@@ -73,8 +73,8 @@ read_stata_estimates <- function(path) {
   coefficients <- estimates[(n_x + 1):(2 * n_x + 1), ]
   interactions <- estimates[(2 * n_x + 2):nrow(estimates), ]
 
-  endowments_padded <- rbind(endowments, c("(Intercept)", 0))
-  interactions_padded <- rbind(interactions, c("(Intercept)", 0))
+  endowments_padded <- rbind(endowments, list("(Intercept)", 0))
+  interactions_padded <- rbind(interactions, list("(Intercept)", 0))
 
   varlevel <-
     cbind(
