@@ -16,10 +16,9 @@ test_that("decomp with zero-variance IVs matches Stata", {
     )
 
   # Get the same thing from saved Stata baseline results
-  tooyoung_stata <-
-    readRDS(
-      testthat::test_path("fixtures", "stata_results", "tooyoung.rds")
-    )
+  stata_dir <-
+    testthat::test_path("fixtures", "stata_results", "tooyoung_dum")
+  tooyoung_stata <- readRDS(file.path(stata_dir, "tooyoung.rds"))
 
   testthat::expect_equal(
     obd_tooyoung$varlevel,

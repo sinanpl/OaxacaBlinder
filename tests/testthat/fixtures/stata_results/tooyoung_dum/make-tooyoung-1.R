@@ -3,7 +3,8 @@ chicago_mod$too_young <- chicago_mod$age < 19
 
 names(chicago_mod) <- gsub("\\.", "_", names(chicago_mod))
 
-stata_dir <- testthat::test_path("fixtures", "stata_results")
+stata_dir <-
+  testthat::test_path("fixtures", "stata_results", "tooyoung_dum")
 
 dta_path <- file.path(stata_dir, "chicago_mod.dta")
 
