@@ -468,8 +468,6 @@ OaxacaBlinderDecomp <-
       )
       results$bootstraps = bootstrap_results
     }
-    tooyoung_stata <- readRDS(testthat::test_path("fixtures", "stata_baselines", "tooyoung.rds"))
-    results$varlevel <- rbind(results$varlevel[1:2, ], tooyoung_stata[3:5, ])
 
     class(results) <- "OaxacaBlinderDecomp"
     results
