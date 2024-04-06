@@ -3,10 +3,9 @@ chicago_mod$too_young <- chicago_mod$age < 19
 
 names(chicago_mod) <- gsub("\\.", "_", names(chicago_mod))
 
-dta_path <-
-  testthat::test_path(
-    "fixtures", "stata_results", "chicago_mod.dta"
-  )
+stata_dir <- testthat::test_path("fixtures", "stata_results")
+
+dta_path <- file.path(stata_dir, "chicago_mod.dta")
 
 chicago_mod |> haven::write_dta(dta_path)
 
@@ -18,10 +17,7 @@ command <-
 
 make_decomp_dofile(
   command = command,
-  do_path =
-    testthat::test_path(
-      "fixtures", "stata_results", "tooyoung.do"
-    ),
+  do_path = file.path(stata_dir, "tooyoung.do"),
   dta_file = basename(dta_path),
   est_file = "tooyoung"
 )

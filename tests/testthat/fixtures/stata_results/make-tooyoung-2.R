@@ -1,5 +1,6 @@
+stata_dir <- testthat::test_path("fixtures", "stata_results")
 varlevel <-
   read_stata_estimates(
-    testthat::test_path("fixtures", "stata_results", "tooyoung.xlsx")
+    file.path(stata_dir, "tooyoung.xlsx")
   )
-saveRDS(varlevel, testthat::test_path("fixtures", "stata_results", "tooyoung.rds"))
+saveRDS(varlevel, file.path(stata_dir, "tooyoung.rds"))
