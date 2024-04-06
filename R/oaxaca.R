@@ -84,7 +84,7 @@ read_stata_estimates <- function(path) {
     )
   rownames(varlevel) <- endowments_padded[[1]]
   colnames(varlevel) <-
-    c("endowments", "coefficients", "interactions")
+    c("endowments", "coefficients", "interaction")
   varlevel_intfirst <-
     varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
   varlevel_intfirst
