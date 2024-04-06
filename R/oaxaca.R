@@ -198,6 +198,7 @@ fit_models <- function(formula, data) {
 extract_betas_EX = function(mod, baseline_invariant) {
   modmat = model.matrix(mod)
   betas = coef(mod)
+  betas[is.na(betas)] <- 0
 
   # if baseline variant;
   # identify factor variables and associated dummy indicators
