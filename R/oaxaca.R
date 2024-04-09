@@ -319,6 +319,9 @@ calculate_coefs <-
         )
       )
 
+    rownames(terms)[which(rownames(terms) == "X.Intercept.")] <-
+      "(Intercept)"
+
     # calculate
     if (type == "threefold") {
       terms$endowments <- (terms$EX_a - terms$EX_b) * terms$B_b
