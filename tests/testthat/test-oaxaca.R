@@ -155,7 +155,7 @@ testthat::test_that("categorical and dummy results match", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "high.school") |>
+    relevel(ref = "LTHS") |>
     relevel(ref = "advanced.degree") # force in spite of sorting
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
