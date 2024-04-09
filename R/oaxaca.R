@@ -254,6 +254,8 @@ extract_betas_EX = function(mod, baseline_invariant) {
     }
   }
 
+  # Fix intercept renaming
+  colnames(modmat)[1] <- colnames(model.matrix(mod$fit))[1]
   EX = apply(modmat, mean, MARGIN = 2)
 
   return(list(betas = betas,
