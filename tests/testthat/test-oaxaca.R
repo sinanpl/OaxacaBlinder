@@ -120,7 +120,7 @@ testthat::test_that("neumark twofold matches manual calcs", {
 })
 
 testthat::test_that("categorical and dummy results match", {
-  run_catg_and_dum <-
+  run_educ_catg_and_dum <-
     function(
       data_catg,
       data_dum,
@@ -132,9 +132,10 @@ testthat::test_that("categorical and dummy results match", {
         OaxacaBlinderDecomp(formula = fmla_catg,
                             data = data_catg,
                             type = obd_type)
+      rownames(obd_catg$varlevel) <-
+        gsub("education", "", rownames(obd_catg$varlevel))
       obd_catg$varlevel <-
-        obd_catg$varlevel[order(obd_catg$varlevel[, 1]), ]
-      rownames(obd_catg$varlevel) <- NULL
+        obd_catg$varlevel[order(rownames(obd_catg$varlevel)), ]
       obd_catg$meta <- NULL
 
       obd_dum <-
@@ -142,8 +143,7 @@ testthat::test_that("categorical and dummy results match", {
                             data = data_dum,
                             type = obd_type)
       obd_dum$varlevel <-
-        obd_dum$varlevel[order(obd_dum$varlevel[, 1]), ]
-      rownames(obd_dum$varlevel) <- NULL
+        obd_dum$varlevel[order(rownames(obd_dum$varlevel)), ]
       obd_dum$meta <- NULL
 
       out <- list(obd_catg = obd_catg, obd_dum = obd_dum)
@@ -176,7 +176,7 @@ testthat::test_that("categorical and dummy results match", {
 
   # Test without dropped items ----
   no_drops_3f <-
-    run_catg_and_dum(
+    run_educ_catg_and_dum(
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_foreign_catg,
@@ -189,7 +189,7 @@ testthat::test_that("categorical and dummy results match", {
   )
 
   no_drops_2f <-
-    run_catg_and_dum(
+    run_educ_catg_and_dum(
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_foreign_catg,
@@ -203,7 +203,7 @@ testthat::test_that("categorical and dummy results match", {
 
   # Test with dropped terms ----
   with_drops_3f <-
-    run_catg_and_dum(
+    run_educ_catg_and_dum(
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_tooyoung_catg,
@@ -216,7 +216,7 @@ testthat::test_that("categorical and dummy results match", {
   )
 
   with_drops_2f <-
-    run_catg_and_dum(
+    run_educ_catg_and_dum(
       data_catg = chicago_long_mod,
       data_dum = chicago_mod,
       fmla_catg = fmla_tooyoung_catg,
