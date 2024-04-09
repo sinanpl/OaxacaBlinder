@@ -315,7 +315,6 @@ calculate_coefs <-
           SIMPLIFY = FALSE
         )
       )
-    terms[is.na(terms)] <- 0
 
     # calculate
     if (type == "threefold") {
