@@ -152,6 +152,20 @@ calculate_gap <- function(formula, data_a, data_b) {
   )
 }
 
+assemble_model <- function(formula, data) {
+  fml_comp <- parse_formula(formula)
+  # Get DV as it will be in model
+  y <- model.frame(data)[[fml_comp$dep_var]]
+  # Expand matrix manually to keep all factor levels
+  modmat <- model.matrix(formula, data)
+  # Save original formula terms
+  terms <- terms(formula)
+  # Fit w/ all levels and clean names except for intercepts
+  fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
+
+  list(y = y, modmat = modmat, terms = terms, fit = fit)
+}
+
 fit_models <- function(formula, data) {
   # get formula components
   fml_comp <- parse_formula(formula)
@@ -193,19 +207,15 @@ fit_models <- function(formula, data) {
     as.formula(fml_reg_pooled_neumark1988)
   fml_reg_pooled_jann2008 <- as.formula(fml_reg_pooled_jann2008)
 
-  mod_a = lm(fml_reg, data = data_a)
-  mod_b = lm(fml_reg, data = data_b)
-  mod_pooled_neumark1988 = lm(fml_reg_pooled_neumark1988, data = data)
-  mod_pooled_jann2008 = lm(fml_reg_pooled_jann2008, data = data)
-
-  return(
-    list(
-      mod_a = mod_a,
-      mod_b = mod_b,
-      mod_pooled_neumark1988 = mod_pooled_neumark1988,
-      mod_pooled_jann2008 = mod_pooled_jann2008
-    )
+  model_args <- list(
+    group_a = list(fml_reg, data_a),
+    group_b = list(fml_reg, data_b),
+    pooled_neumark1988 = list(fml_reg_pooled_neumark1988, data),
+    pooled_jann2008 = list(fml_reg_pooled_jann2008, data)
   )
+  models <-
+    lapply(model_args, function(x) assemble_model(x[[1]], x[[2]]))
+  models
 }
 
 extract_betas_EX = function(mod, baseline_invariant) {
