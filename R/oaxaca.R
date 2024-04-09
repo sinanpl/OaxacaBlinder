@@ -135,11 +135,9 @@ modify_group_var_to_dummy = function(data, formula) {
 
 }
 
-calculate_gap <- function(formula, data_a, data_b) {
-  fml_comp <- parse_formula(formula)
-
-  EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
-  EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
+calculate_gap <- function(y_a, y_b) {
+  EY_a <- mean(y_a, na.rm = TRUE)
+  EY_b <- mean(y_b, na.rm = TRUE)
 
   gap <- EY_a - EY_b
   pct_gap <- gap / EY_a
@@ -219,8 +217,8 @@ fit_models <- function(formula, data) {
 }
 
 extract_betas_EX = function(mod, baseline_invariant) {
-  modmat = model.matrix(mod)
-  betas = coef(mod)
+  modmat = mod$modmat
+  betas = coef(mod$fit)
 
   # if baseline variant;
   # identify factor variables and associated dummy indicators
@@ -282,19 +280,19 @@ calculate_coefs <-
     r = lapply(fitted_models, extract_betas_EX, baseline_invariant)
 
     # extract model matrix averages
-    EX_a <- r$mod_a$EX
-    EX_b <- r$mod_b$EX
+    EX_a <- r$group_a$EX
+    EX_b <- r$group_b$EX
 
     # extract betas
-    B_a <- r$mod_a$betas
-    B_b <- r$mod_b$betas
+    B_a <- r$group_a$betas
+    B_b <- r$group_b$betas
 
     if (pooled == "neumark") {
-      EX_pool = r$mod_pooled_neumark1988$EX
-      B_pool = r$mod_pooled_neumark1988$betas
+      EX_pool = r$pooled_neumark1988$EX
+      B_pool = r$pooled_neumark1988$betas
     } else{
-      EX_pool = r$mod_pooled_jann2008$EX  [names(EX_a)] # drops groupvar col
-      B_pool = r$mod_pooled_jann2008$betas[names(B_a)]
+      EX_pool = r$pooled_jann2008$EX  [names(EX_a)] # drops groupvar col
+      B_pool = r$pooled_jann2008$betas[names(B_a)]
     }
 
     # join terms properly
@@ -500,9 +498,8 @@ OaxacaBlinderDecomp <-
 
     # collect descriptives
     results$gaps <- calculate_gap(
-      formula,
-      model.frame(fitted_models$mod_a),
-      model.frame(fitted_models$mod_b)
+      fitted_models$group_a$y,
+      fitted_models$group_b$y
     )
     results$meta <- list(
       type = type,
