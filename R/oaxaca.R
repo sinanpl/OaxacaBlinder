@@ -156,6 +156,19 @@ fit_models <- function(formula, data) {
   # get formula components
   fml_comp <- parse_formula(formula)
 
+  # Convert character cols to factors
+  data <-
+    lapply(
+      data,
+      function(x) {
+        if (is.character(x)) x <- as.factor(x)
+        # Set explicitly to matrix so models won't drop levels
+        if (is.factor(x)) contrasts(x) <- contrasts(x)
+        x
+      }
+    ) |>
+    data.frame()
+
   # filter datasets for group a/b
   idx <- data[[fml_comp$group_var]] == 0
   data_a <- data[idx,]
