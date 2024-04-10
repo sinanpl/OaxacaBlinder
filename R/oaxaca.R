@@ -68,11 +68,13 @@ read_stata_estimates <- function(path) {
 
   estimates <-
     stata_estimates[!(stata_estimates$name %in% drops), ]
+  # Split estimates into components
   n_x <- (nrow(estimates) - 1) / 3
   endowments <- estimates[1:n_x, ]
   coefficients <- estimates[(n_x + 1):(2 * n_x + 1), ]
   interactions <- estimates[(2 * n_x + 2):nrow(estimates), ]
 
+  # Use 0 as intercept for components that don't have one
   endowments_padded <- rbind(endowments, list("(Intercept)", 0))
   interactions_padded <- rbind(interactions, list("(Intercept)", 0))
 
@@ -85,6 +87,7 @@ read_stata_estimates <- function(path) {
   rownames(varlevel) <- endowments_padded[[1]]
   colnames(varlevel) <-
     c("endowments", "coefficients", "interaction")
+  # Move intercept to top
   varlevel_intfirst <-
     varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
   varlevel_intfirst
