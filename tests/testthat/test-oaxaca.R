@@ -197,8 +197,8 @@ testthat::test_that("categorical and dummy results match", {
       obd_type = "twofold"
     )
   testthat::expect_equal(
-    no_drops_2f$obd_catg_varlevels,
-    no_drops_2f$obd_dum_varlevels
+    no_drops_2f$obd_catg$varlevel,
+    no_drops_2f$obd_dum$varlevel
   )
 
   # Test with dropped terms ----
