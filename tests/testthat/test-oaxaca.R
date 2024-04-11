@@ -120,35 +120,14 @@ testthat::test_that("neumark twofold matches manual calcs", {
 })
 
 testthat::test_that("categorical and dummy results match", {
-  run_educ_catg_and_dum <-
-    function(
-      data_catg,
-      data_dum,
-      fmla_catg,
-      fmla_dum,
-      obd_type
-    ) {
-      obd_catg <-
-        OaxacaBlinderDecomp(formula = fmla_catg,
-                            data = data_catg,
-                            type = obd_type)
-      rownames(obd_catg$varlevel) <-
-        gsub("education", "", rownames(obd_catg$varlevel))
-      obd_catg$varlevel <-
-        obd_catg$varlevel[order(rownames(obd_catg$varlevel)), ]
-      obd_catg$meta <- NULL
-
-      obd_dum <-
-        OaxacaBlinderDecomp(formula = fmla_dum,
-                            data = data_dum,
-                            type = obd_type)
-      obd_dum$varlevel <-
-        obd_dum$varlevel[order(rownames(obd_dum$varlevel)), ]
-      obd_dum$meta <- NULL
-
-      out <- list(obd_catg = obd_catg, obd_dum = obd_dum)
-      out
-    }
+  conform_educ_results <- function (obd) {
+    rownames(obd$varlevel) <-
+      gsub("education", "", rownames(obd$varlevel))
+    obd$varlevel <-
+      obd$varlevel[order(rownames(obd$varlevel)), ]
+    obd$meta <- NULL
+    obd
+  }
 
   # Set up long and dummy datasets and formulae ----
 
@@ -175,57 +154,85 @@ testthat::test_that("categorical and dummy results match", {
     too_young
 
   # Test without dropped items ----
-  no_drops_3f <-
-    run_educ_catg_and_dum(
-      data_catg = chicago_long_mod,
-      data_dum = chicago_mod,
-      fmla_catg = fmla_foreign_catg,
-      fmla_dum = fmla_foreign_dum,
-      obd_type = "threefold"
-    )
+  no_drops_3f_catg <-
+    OaxacaBlinderDecomp(
+      formula = fmla_foreign_catg,
+      data = chicago_long_mod,
+      type = "threefold"
+    ) |>
+    conform_educ_results()
+  no_drops_3f_dum <-
+    OaxacaBlinderDecomp(
+      formula = fmla_foreign_dum,
+      data = chicago_mod,
+      type = "threefold"
+    ) |>
+    conform_educ_results()
+
   testthat::expect_equal(
-    no_drops_3f$obd_catg,
-    no_drops_3f$obd_dum
+    no_drops_3f_catg,
+    no_drops_3f_dum
   )
 
-  no_drops_2f <-
-    run_educ_catg_and_dum(
-      data_catg = chicago_long_mod,
-      data_dum = chicago_mod,
-      fmla_catg = fmla_foreign_catg,
-      fmla_dum = fmla_foreign_dum,
-      obd_type = "twofold"
-    )
+  no_drops_2f_catg <-
+    OaxacaBlinderDecomp(
+      formula = fmla_foreign_catg,
+      data = chicago_long_mod,
+      type = "twofold"
+    ) |>
+    conform_educ_results()
+  no_drops_2f_dum <-
+    OaxacaBlinderDecomp(
+      formula = fmla_foreign_dum,
+      data = chicago_mod,
+      type = "twofold"
+    ) |>
+    conform_educ_results()
+
   testthat::expect_equal(
-    no_drops_2f$obd_catg$varlevel,
-    no_drops_2f$obd_dum$varlevel
+    no_drops_2f_catg,
+    no_drops_2f_dum
   )
 
   # Test with dropped terms ----
-  with_drops_3f <-
-    run_educ_catg_and_dum(
-      data_catg = chicago_long_mod,
-      data_dum = chicago_mod,
-      fmla_catg = fmla_tooyoung_catg,
-      fmla_dum = fmla_tooyoung_dum,
-      obd_type = "threefold"
-    )
+  with_drops_3f_catg <-
+    OaxacaBlinderDecomp(
+      formula = fmla_tooyoung_catg,
+      data = chicago_long_mod,
+      type = "threefold"
+    ) |>
+    conform_educ_results()
+  with_drops_3f_dum <-
+    OaxacaBlinderDecomp(
+      formula = fmla_tooyoung_dum,
+      data = chicago_mod,
+      type = "threefold"
+    ) |>
+    conform_educ_results()
+
   testthat::expect_equal(
-    with_drops_3f$obd_catg,
-    with_drops_3f$obd_dum
+    with_drops_3f_catg,
+    with_drops_3f_dum
   )
 
-  with_drops_2f <-
-    run_educ_catg_and_dum(
-      data_catg = chicago_long_mod,
-      data_dum = chicago_mod,
-      fmla_catg = fmla_tooyoung_catg,
-      fmla_dum = fmla_tooyoung_dum,
-      obd_type = "threefold"
-    )
+  with_drops_2f_catg <-
+    OaxacaBlinderDecomp(
+      formula = fmla_tooyoung_catg,
+      data = chicago_long_mod,
+      type = "twofold"
+    ) |>
+    conform_educ_results()
+  with_drops_2f_dum <-
+    OaxacaBlinderDecomp(
+      formula = fmla_tooyoung_dum,
+      data = chicago_mod,
+      type = "twofold"
+    ) |>
+    conform_educ_results()
+
   testthat::expect_equal(
-    with_drops_2f$obd_catg,
-    with_drops_2f$obd_dum
+    with_drops_2f_catg,
+    with_drops_2f_dum
   )
 
 })
