@@ -119,7 +119,7 @@ testthat::test_that("neumark twofold matches manual calcs", {
 
 })
 
-testthat::test_that("categorical and dummy results match", {
+testthat::test_that("threefold categ. and dummy results match", {
   conform_educ_results <- function (obd) {
     rownames(obd$varlevel) <-
       gsub("education", "", rownames(obd$varlevel))
@@ -174,26 +174,6 @@ testthat::test_that("categorical and dummy results match", {
     no_drops_3f_dum
   )
 
-  no_drops_2f_catg <-
-    OaxacaBlinderDecomp(
-      formula = fmla_foreign_catg,
-      data = chicago_long_mod,
-      type = "twofold"
-    ) |>
-    conform_educ_results()
-  no_drops_2f_dum <-
-    OaxacaBlinderDecomp(
-      formula = fmla_foreign_dum,
-      data = chicago_mod,
-      type = "twofold"
-    ) |>
-    conform_educ_results()
-
-  testthat::expect_equal(
-    no_drops_2f_catg,
-    no_drops_2f_dum
-  )
-
   # Test with dropped terms ----
   with_drops_3f_catg <-
     OaxacaBlinderDecomp(
@@ -215,6 +195,64 @@ testthat::test_that("categorical and dummy results match", {
     with_drops_3f_dum
   )
 
+})
+
+testthat::test_that("twofold categ. and dummy results match", {
+  conform_educ_results <- function (obd) {
+    rownames(obd$varlevel) <-
+      gsub("education", "", rownames(obd$varlevel))
+    obd$varlevel <-
+      obd$varlevel[order(rownames(obd$varlevel)), ]
+    obd$meta <- NULL
+    obd
+  }
+
+  # Set up long and dummy datasets and formulae ----
+
+  chicago_long_mod <- chicago_long
+  chicago_long_mod$education <-
+    as.factor(chicago_long_mod$education) |>
+    relevel(ref = "LTHS") |>
+    relevel(ref = "advanced.degree") # force in spite of sorting
+  chicago_long_mod$too_young <- chicago_long_mod$age < 19
+
+  chicago_mod <- chicago
+  chicago_mod$too_young <- chicago_mod$age < 19
+
+  fmla_foreign_catg <- ln_real_wage ~ education | foreign_born
+  fmla_tooyoung_catg <- ln_real_wage ~ education | too_young
+
+  fmla_foreign_dum <-
+    ln.real.wage ~
+    LTHS + some.college + college + high.school |
+    foreign.born
+  fmla_tooyoung_dum <-
+    ln.real.wage ~
+    LTHS + some.college + college + high.school |
+    too_young
+
+  # Test without dropped items ----
+  no_drops_2f_catg <-
+    OaxacaBlinderDecomp(
+      formula = fmla_foreign_catg,
+      data = chicago_long_mod,
+      type = "twofold"
+    ) |>
+    conform_educ_results()
+  no_drops_2f_dum <-
+    OaxacaBlinderDecomp(
+      formula = fmla_foreign_dum,
+      data = chicago_mod,
+      type = "twofold"
+    ) |>
+    conform_educ_results()
+
+  testthat::expect_equal(
+    no_drops_2f_catg,
+    no_drops_2f_dum
+  )
+
+  # Test with dropped terms ----
   with_drops_2f_catg <-
     OaxacaBlinderDecomp(
       formula = fmla_tooyoung_catg,
