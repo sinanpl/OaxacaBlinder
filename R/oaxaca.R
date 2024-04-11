@@ -245,6 +245,34 @@ get_bootstrap_ests = function(formula, data, n_bootstraps, type, pooled, baselin
       out
     })
 
+    bs_checksums <-
+      vapply(
+        X = runs,
+        FUN = function(x) {
+          isTRUE(
+            all.equal(sum(x$varlevel, na.rm = FALSE), x$gaps$gap)
+          )
+        },
+        FUN.VALUE = logical(1)
+      )
+    if (sum(bs_checksums) == 0) {
+      stop("Sum of estimates did not match gap between groups
+      in any bootstrap runs.
+      This is a bug.  Please report it at
+      https://github.com/sinanpl/OaxacaBlinder/issues .")
+    } else if (sum(!bs_checksums) > 0) {
+      runs <- runs[bs_checksums]
+      warning(
+        paste(
+          "Sum of estimates did not match gap between groups in",
+          sum(!bs_checksums), "bootstrap runs and were discarded.",
+          sum(bs_checksums), "runs remain.",
+          "This is a bug.  Please report it at
+          https://github.com/sinanpl/OaxacaBlinder/issues ."
+        )
+      )
+    }
+
     gaps_list = lapply(runs, `[[`, "gaps")
     overall_level_list = lapply(runs, `[[`, "overall")
     varlevel_list = lapply(runs, `[[`, "varlevel")
