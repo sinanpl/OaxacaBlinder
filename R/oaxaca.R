@@ -153,7 +153,7 @@ calculate_gap <- function(y_a, y_b) {
 assemble_model <- function(formula, data) {
   fml_comp <- parse_formula(formula)
   # Get DV as it will be in model
-  y <- model.frame(data)[[fml_comp$dep_var]]
+  y <- model.frame(formula, data)[[fml_comp$dep_var]]
   # Expand matrix manually to keep all factor levels
   modmat <- model.matrix(formula, data)
   # Save original formula terms
