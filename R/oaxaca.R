@@ -172,12 +172,7 @@ fit_models <- function(formula, data) {
   data <-
     lapply(
       data,
-      function(x) {
-        if (is.character(x)) x <- as.factor(x)
-        # Set explicitly to matrix so models won't drop levels
-        if (is.factor(x)) contrasts(x) <- contrasts(x)
-        x
-      }
+      function(x) if (is.character(x)) as.factor(x) else x
     ) |>
     data.frame()
 
