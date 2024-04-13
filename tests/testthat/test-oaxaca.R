@@ -371,3 +371,38 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
     stata_obd_ests
   )
 })
+
+test_that("strange categ. level names don't change results", {
+  chicago_long_mod <- chicago_long
+  chicago_long_mod$education <-
+    gsub(
+      "some.college",
+      "some college'd",
+      chicago_long_mod$education
+    )
+
+    obd_sensible_level <-
+    OaxacaBlinderDecomp(
+      ln_real_wage ~ education | foreign_born,
+      chicago_long,
+      baseline_invariant = TRUE,
+      type = "threefold"
+    )
+  obd_sensible_level$meta <- NULL
+
+  obd_silly_level <-
+    OaxacaBlinderDecomp(
+      ln_real_wage ~ education | foreign_born,
+      chicago_long_mod,
+      baseline_invariant = TRUE,
+      type = "threefold"
+    )
+  obd_silly_level$meta <- NULL
+  rownames(obd_silly_level$varlevel) <-
+    gsub("ege\\.d", "ege", rownames(obd_silly_level$varlevel))
+
+  testthat::expect_equal(
+    obd_silly_level,
+    obd_sensible_level
+  )
+})
