@@ -212,7 +212,8 @@ fit_models <- function(formula, data) {
 }
 
 extract_betas_EX = function(mod, baseline_invariant) {
-  modmat = mod$modmat
+  modmat_orig <- mod$modmat
+  modmat <- model.matrix(mod$fit)
   betas = coef(mod$fit)
   betas[is.na(betas)] <- 0
 
@@ -221,10 +222,10 @@ extract_betas_EX = function(mod, baseline_invariant) {
   # apply gardeazabal2004 ommitted baseline correction per set of dummy variables
   if (baseline_invariant) {
     # identify factor terms
-    factor_variables = names(attr(modmat, "contrasts"))
+    factor_variables = names(attr(modmat_orig, "contrasts"))
 
     terms = attr(mod$terms, "term.labels")
-    term_assignments_i = attr(modmat, "assign")  # intercept = 0; gets removed
+    term_assignments_i = attr(modmat_orig, "assign")  # intercept = 0; gets removed
     term_assignments = terms[term_assignments_i]
 
     # for each dummy encoded term; adjust the betas; save and add a baseline coef to beta and modmat
