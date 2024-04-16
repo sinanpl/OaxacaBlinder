@@ -38,37 +38,7 @@ make_decomp_dofile <- function(command, do_path, dta_file, est_file) {
   invisible(command)
 }
 
-#' Read estimates from Stata's Excel export
-#'
-#' This internal function reads the estimates produced by running
-#' Jann's \code{oaxaca} command in Stata.  The estimates should be
-#' exported to a file with extension \code{xlsx} or \code{xls}
-#' using Stata using the \code{etable} command, with the option
-#' \code{cstat(_r_b)} to ensure that standard errors are not
-#' included.
-#'
-#' @param path The path to the Excel file.
-#'
-#' @return A data frame with the same rows and columns as would be
-#'   produced in the \code{varlevel} element of the output of
-#'   \code{OaxacaBlinderDecomp} (though the rows might be in a
-#'   different order).
-read_stata_estimates <- function(path) {
-  stata_estimates <-
-    readxl::read_excel(
-      path = path,
-      col_names = c("name", "value"),
-      col_types = c("text", "numeric"),
-      skip = 1
-    )
-
-  drops <-
-    c("group_1", "group_2", "difference",
-      "endowments", "coefficients", "interaction",
-      "explained", "unexplained", "N")
-
-  estimates <-
-    stata_estimates[!(stata_estimates$name %in% drops), ]
+clean_stata_estimates_3f <- function(estimates) {
   # Split estimates into components
   n_x <- (nrow(estimates) - 1) / 3
   endowments <- estimates[1:n_x, ]
@@ -92,6 +62,69 @@ read_stata_estimates <- function(path) {
   varlevel_intfirst <-
     varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
   varlevel_intfirst
+}
+
+clean_stata_estimates_2f <- function(estimates) {
+  # Split estimates into components
+  n_x <- (nrow(estimates) - 1) / 2
+  explained <- estimates[1:n_x, ]
+  unexplained <- estimates[(n_x + 1):nrow(estimates), ]
+
+  # Use 0 as intercept for components that don't have one
+  explained_padded <- rbind(explained, list("(Intercept)", 0))
+
+  varlevel <-
+    cbind(
+      explained_padded[2],
+      unexplained[2]
+    )
+  rownames(varlevel) <- explained_padded[[1]]
+  colnames(varlevel) <-
+    c("explained", "unexplained")
+  # Move intercept to top
+  varlevel_intfirst <-
+    varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
+  varlevel_intfirst
+}
+
+#' Read estimates from Stata's Excel export
+#'
+#' This internal function reads the estimates produced by running
+#' Jann's \code{oaxaca} command in Stata.  The estimates should be
+#' exported to a file with extension \code{xlsx} or \code{xls}
+#' using Stata using the \code{etable} command, with the option
+#' \code{cstat(_r_b)} to ensure that standard errors are not
+#' included.
+#'
+#' @param path The path to the Excel file.
+#' @param type Either "twofold" or "threefold".
+#'
+#' @return A data frame with the same rows and columns as would be
+#'   produced in the \code{varlevel} element of the output of
+#'   \code{OaxacaBlinderDecomp} (though the rows might be in a
+#'   different order).
+read_stata_estimates <- function(path, type) {
+  stata_estimates <-
+    readxl::read_excel(
+      path = path,
+      col_names = c("name", "value"),
+      col_types = c("text", "numeric"),
+      skip = 1
+    )
+
+  drops <-
+    c("group_1", "group_2", "difference",
+      "endowments", "coefficients", "interaction",
+      "explained", "unexplained", "N")
+
+  estimates <-
+    stata_estimates[!(stata_estimates$name %in% drops), ]
+
+  if (type == "threefold")
+    out <- clean_stata_estimates_3f(estimates)
+  if (type == "twofold")
+    out <- clean_stata_estimates_2f(estimates)
+  out
 }
 
 parse_formula <- function(formula) {
