@@ -63,8 +63,9 @@ read_stata_estimates <- function(path) {
     )
 
   drops <-
-    c("group_1", "group_2", "difference", "endowments",
-      "coefficients", "interaction", "N")
+    c("group_1", "group_2", "difference",
+      "endowments", "coefficients", "interaction",
+      "explained", "unexplained", "N")
 
   estimates <-
     stata_estimates[!(stata_estimates$name %in% drops), ]
