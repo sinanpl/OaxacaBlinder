@@ -12,6 +12,7 @@ LazyData: true
 RoxygenNote: 7.3.1
 Suggests:
     knitr,
+    readxl,
     rmarkdown,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr

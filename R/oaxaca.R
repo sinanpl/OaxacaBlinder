@@ -1,4 +1,97 @@
+#' Create a \code{.do} file to run a command and save estimates
+#'
+#' Internal function to write a \code{.do} file that will run a
+#' command and export a file suitable for reading with
+#' \code{read_stata_estimates}.
+#'
+#' @param command String of Stata estimation command.
+#' @param do_path Path to \code{.do} file to save.
+#' @param dta_file Data file for Stata to use in same directory as
+#'   \code{.do} file.
+#' @param est_file Filename (without extension) Stata to save estimate results in same
+#'   directory as \code{.do} file.
+#'
+#' @return Nothing, called only for its side effect of writing the
+#'   \code{.do} file.
+make_decomp_dofile <- function(command, do_path, dta_file, est_file) {
+  do_file_text <-
+    c(
+      "clear all",
+      paste("use", basename(dta_file)),
+      command,
+      paste0(
+        "etable, cstat(_r_b, nformat(%8.0g)) export(",
+        basename(est_file),
+        ".xlsx, replace)"
+      )
+    )
 
+  cat(do_file_text, file = do_path, sep = "\n")
+
+  message(
+    paste0(
+      basename(do_path), " saved to ", dirname(do_path),
+      ".\nRun `do ", basename(do_path),
+      "` in Stata to produce new test baselines."
+    )
+  )
+  invisible(command)
+}
+
+#' Read estimates from Stata's Excel export
+#'
+#' This internal function reads the estimates produced by running
+#' Jann's \code{oaxaca} command in Stata.  The estimates should be
+#' exported to a file with extension \code{xlsx} or \code{xls}
+#' using Stata using the \code{etable} command, with the option
+#' \code{cstat(_r_b)} to ensure that standard errors are not
+#' included.
+#'
+#' @param path The path to the Excel file.
+#'
+#' @return A data frame with the same rows and columns as would be
+#'   produced in the \code{varlevel} element of the output of
+#'   \code{OaxacaBlinderDecomp} (though the rows might be in a
+#'   different order).
+read_stata_estimates <- function(path) {
+  stata_estimates <-
+    readxl::read_excel(
+      path = path,
+      col_names = c("name", "value"),
+      col_types = c("text", "numeric"),
+      skip = 1
+    )
+
+  drops <-
+    c("group_1", "group_2", "difference", "endowments",
+      "coefficients", "interaction", "N")
+
+  estimates <-
+    stata_estimates[!(stata_estimates$name %in% drops), ]
+  # Split estimates into components
+  n_x <- (nrow(estimates) - 1) / 3
+  endowments <- estimates[1:n_x, ]
+  coefficients <- estimates[(n_x + 1):(2 * n_x + 1), ]
+  interactions <- estimates[(2 * n_x + 2):nrow(estimates), ]
+
+  # Use 0 as intercept for components that don't have one
+  endowments_padded <- rbind(endowments, list("(Intercept)", 0))
+  interactions_padded <- rbind(interactions, list("(Intercept)", 0))
+
+  varlevel <-
+    cbind(
+      endowments_padded[2],
+      coefficients[2],
+      interactions_padded[2]
+    )
+  rownames(varlevel) <- endowments_padded[[1]]
+  colnames(varlevel) <-
+    c("endowments", "coefficients", "interaction")
+  # Move intercept to top
+  varlevel_intfirst <-
+    varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
+  varlevel_intfirst
+}
 
 parse_formula <- function(formula) {
   # convert to character and split in depvar, indepvar and groupvar
