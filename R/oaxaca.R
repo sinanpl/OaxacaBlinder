@@ -364,10 +364,9 @@ extract_coeftype_bootstraps <- function(coef_type,
     setNames(coef_names)
 }
 
-extract_bootstraps <- function(runs,
-                               coef_types,
-                               coef_names,
-                               conf_probs) {
+extract_bootstrap_estimates <- function(runs,
+                                        coef_types,
+                                        coef_names) {
   # 1 row per run, 1 column per coefficient, 1 df per coef_type
   bs_estimates <-
     lapply(coef_types, function(coef_type) {
@@ -378,6 +377,10 @@ extract_bootstraps <- function(runs,
     }) |>
     setNames(coef_types)
 
+  bs_estimates
+}
+
+summarize_bootstraps <- function(bs_estimates, conf_probs) {
   # coef_type, term, summary type in columns; 1 df per coef_type
   bs_summaries_list <-
     lapply(
@@ -436,7 +439,7 @@ get_bootstraps <- function(formula,
   )
   varlevel_list <- lapply(runs_all, `[[`, "varlevel")
 
-  # Extract stuff for each type of list
+  # Extract estimates for each type of list
   coef_types <- names(overall_list[[1]])
   varlevel_coef_names <- rownames(varlevel_list[[1]])
 
@@ -447,25 +450,27 @@ get_bootstraps <- function(formula,
       list(runs = varlevel_list, coef_names = varlevel_coef_names)
   )
 
-  bs_out <- lapply(
+  bs_estimates <- lapply(
     extraction_args,
-    function(x) extract_bootstraps(
+    function(x) extract_bootstrap_estimates(
       runs = x$runs,
       coef_types = coef_types,
-      coef_names = x$coef_names,
-      conf_probs = conf_probs
+      coef_names = x$coef_names
     )
   )
+  # Summarize estimates for each type of list
+  bs_summaries <-
+    lapply(bs_estimates, summarize_bootstraps, conf_probs)
 
   # Move coarser metrics back up a level
-  rownames(bs_out$overall) <- bs_out$overall$coef_type
-  bs_out$overall <-
-    bs_out$overall[!(names(bs_out$overall) %in%
-                       c("coef_type", "term"))]
+  rownames(bs_summaries$overall) <- bs_summaries$overall$coef_type
+  bs_summaries$overall <-
+    bs_summaries$overall[!(names(bs_summaries$overall)
+                           %in% c("coef_type", "term"))]
 
   list(
-    overall = bs_out$overall,
-    varlevel = bs_out$varlevel
+    overall = bs_summaries$overall,
+    varlevel = bs_summaries$varlevel
   )
 }
 
