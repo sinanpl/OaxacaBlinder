@@ -69,6 +69,19 @@ test_that("baseline-adjusted-IV Jann twofold results match Stata", {
   )
 })
 
+test_that("threefold results with bootstraps haven't changed", {
+  set.seed(1973)
+  threefold <- OaxacaBlinderDecomp(
+    formula = ln_real_wage ~ age + education | female,
+    data = chicago_long,
+    type = "threefold",
+    baseline_invariant = TRUE,
+    n_bootstraps = 10
+  )
+  testthat::expect_snapshot(summary(threefold))
+  testthat::expect_snapshot(coef(threefold, ci = TRUE))
+})
+
 test_that("twofold results with bootstraps haven't changed", {
   set.seed(1973)
   twofold <- OaxacaBlinderDecomp(
