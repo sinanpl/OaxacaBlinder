@@ -351,36 +351,55 @@ calculate_coefs <-
          varlevel = variable_level_results)
   }
 
+extract_coeftype_bootstraps <- function(coef_type,
+                                        runs,
+                                        coef_names) {
+  # One list element per coefficient name
+  lapply(
+    coef_names,
+    function(cfname) {
+      vapply(runs, `[`, double(1), cfname, coef_type)
+    }
+  ) |>
+    setNames(coef_names)
+}
+
 extract_bootstraps <- function(runs,
                                coef_types,
                                coef_names,
                                conf_probs) {
-  # helper function
-  rbind_list <- function(L) {
-    do.call(rbind, L)
-  }
-
-  bs_summaries <- lapply(coef_types, function(cftype) {
-    lapply(coef_names, function(cfname) {
-      estimates <- sapply(runs, `[`, cfname, cftype)
-      c(
-        se = sd(estimates, na.rm = TRUE),
-        quantile(estimates, probs = conf_probs)
+  # 1 row per run, 1 column per coefficient, 1 df per coef_type
+  bs_estimates <-
+    lapply(coef_types, function(coef_type) {
+      data.frame(
+        extract_coeftype_bootstraps(coef_type, runs, coef_names),
+        check.names = FALSE
       )
-    }) |> setNames(coef_names)
-  }) |>
-    setNames(coef_types) |>
-    lapply(rbind_list)
+    }) |>
+    setNames(coef_types)
 
-  bs_summaries <- lapply(coef_types, function(cf_type) {
-    x <- bs_summaries[[cf_type]]
-    x <- as.data.frame(x)
-    x["coef_type"] <- cf_type
-    x["term"] <- rownames(x)
-    rownames(x) <- NULL
-    x[c(4, 5, 1, 2, 3)]
-  }) |>
-    rbind_list()
+  # coef_type, term, summary type in columns; 1 df per coef_type
+  bs_summaries_list <-
+    lapply(
+      names(bs_estimates),
+      function(coef_type) {
+        se <- lapply(bs_estimates[[coef_type]], sd, na.rm = TRUE)
+        ci <- lapply(bs_estimates[[coef_type]], quantile, conf_probs)
+        summ <- data.frame(
+          se = do.call(rbind, se),
+          do.call(rbind, ci),
+          check.names = FALSE
+        )
+        summ <-
+          cbind(coef_type = coef_type, term = rownames(summ), summ)
+        rownames(summ) <- NULL
+        summ
+      }
+    )
+  # coef_type, term, summary type in columns
+  bs_summaries <- do.call(rbind, bs_summaries_list)
+
+  bs_summaries
 }
 
 get_bootstraps <- function(formula,
