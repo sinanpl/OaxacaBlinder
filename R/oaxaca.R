@@ -390,6 +390,7 @@ get_bootstraps <- function(formula,
                            pooled,
                            baseline_invariant,
                            conf_probs = conf_probs) {
+  # Run the bootstraps
   runs_all <- replicate(n_bootstraps,
     simplify = FALSE,
     {
@@ -409,12 +410,14 @@ get_bootstraps <- function(formula,
     }
   )
 
+  # Make each type of list at same grain
   overall_list <- lapply(
     runs_all,
     function(x) data.frame(x$overall, row.names = "overall")
   )
   varlevel_list <- lapply(runs_all, `[[`, "varlevel")
 
+  # Extract stuff for each type of list
   coef_types <- names(overall_list[[1]])
   varlevel_coef_names <- rownames(varlevel_list[[1]])
 
@@ -435,6 +438,7 @@ get_bootstraps <- function(formula,
     )
   )
 
+  # Move coarser metrics back up a level
   rownames(bs_out$overall) <- bs_out$overall$coef_type
   bs_out$overall <-
     bs_out$overall[!(names(bs_out$overall) %in%
