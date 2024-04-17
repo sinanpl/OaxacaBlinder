@@ -245,16 +245,17 @@ get_bootstrap_ests = function(formula, data, n_bootstraps, type, pooled, baselin
       out
     })
 
-    bs_checksums <-
-      vapply(
-        X = runs,
-        FUN = function(x) {
-          isTRUE(
-            all.equal(sum(x$varlevel, na.rm = FALSE), x$gaps$gap)
-          )
-        },
-        FUN.VALUE = logical(1)
-      )
+  bs_checksums <-
+    vapply(
+      X = runs,
+      FUN = function(x) {
+        isTRUE(all.equal(sum(x$varlevel[!(names(x$varlevel)
+                                          %in% c("unexplained_a", "unexplained_b"))],
+                             na.rm = FALSE),
+                         x$gaps$gap))
+      },
+      FUN.VALUE = logical(1)
+    )
     if (sum(bs_checksums) == 0) {
       stop("Sum of estimates did not match gap between groups
       in any bootstrap runs.
