@@ -418,26 +418,31 @@ get_bootstraps <- function(formula,
   coef_types <- names(overall_list[[1]])
   varlevel_coef_names <- rownames(varlevel_list[[1]])
 
-  bs_overall <- extract_bootstraps(
-    overall_list,
-    coef_types,
-    "overall",
-    conf_probs
+  extraction_args <- list(
+    overall =
+      list(runs = overall_list, coef_names = "overall"),
+    varlevel =
+      list(runs = varlevel_list, coef_names = varlevel_coef_names)
   )
-  rownames(bs_overall) <- bs_overall$coef_type
-  bs_overall <-
-    bs_overall[!(names(bs_overall) %in% c("coef_type", "term"))]
 
-  bs_varlevel <- extract_bootstraps(
-    varlevel_list,
-    coef_types,
-    varlevel_coef_names,
-    conf_probs
+  bs_out <- lapply(
+    extraction_args,
+    function(x) extract_bootstraps(
+      runs = x$runs,
+      coef_types = coef_types,
+      coef_names = x$coef_names,
+      conf_probs = conf_probs
+    )
   )
+
+  rownames(bs_out$overall) <- bs_out$overall$coef_type
+  bs_out$overall <-
+    bs_out$overall[!(names(bs_out$overall) %in%
+                       c("coef_type", "term"))]
 
   list(
-    overall = bs_overall,
-    varlevel = bs_varlevel
+    overall = bs_out$overall,
+    varlevel = bs_out$varlevel
   )
 }
 
