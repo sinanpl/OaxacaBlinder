@@ -351,72 +351,94 @@ calculate_coefs <-
          varlevel = variable_level_results)
   }
 
-get_bootstrap_ci = function(formula,
-                            data,
-                            n_bootstraps,
-                            type,
-                            pooled,
-                            baseline_invariant,
-                            conf_probs = conf_probs) {
-  bs = replicate(n_bootstraps,
-                 simplify = FALSE, {
-                   idx = sample.int(n = nrow(data),
-                                    size = nrow(data),
-                                    replace = TRUE)
-                   sample_data = data[idx,]
-                   fitted_models = fit_models(formula, sample_data)
-                   calculate_coefs(
-                     fitted_models,
-                     type = type,
-                     pooled = pooled,
-                     baseline_invariant = baseline_invariant
-                   )
-                 })
+extract_bootstraps <- function(runs,
+                               coef_types,
+                               coef_names,
+                               conf_probs) {
+  # helper function
+  rbind_list <- function(L) {
+    do.call(rbind, L)
+  }
 
-  overall_level_list = lapply(bs, `[[`, "overall")
-  varlevel_list = lapply(bs, `[[`, "varlevel")
-
-  coef_types = names(overall_level_list[[1]])
-  varlevel_coef_names = rownames(varlevel_list[[1]])
-
-  CI_overall = do.call(rbind, {
-    lapply(coef_types, function(coeftype) {
-      estimates <- sapply(overall_level_list, `[[`, coeftype)
+  bs_summaries <- lapply(coef_types, function(cftype) {
+    lapply(coef_names, function(cfname) {
+      estimates <- sapply(runs, `[`, cfname, cftype)
       c(
         se = sd(estimates, na.rm = TRUE),
         quantile(estimates, probs = conf_probs)
       )
-    }) |> setNames(coef_types)
-  })
-
-  # helper function
-  rbind_list = function(L)
-    do.call(rbind, L)
-
-  CI_varlevel = lapply(coef_types, function(cftype) {
-    lapply(varlevel_coef_names, function(coefname) {
-      estimates <- sapply(varlevel_list, `[`, coefname, cftype)
-        c(
-          se = sd(estimates, na.rm = TRUE),
-          quantile(estimates, probs = conf_probs)
-        )    
-    }) |> setNames(varlevel_coef_names)
+    }) |> setNames(coef_names)
   }) |>
     setNames(coef_types) |>
     lapply(rbind_list)
 
-  CI_varlevel = lapply(coef_types, function(cf_type) {
-    x = CI_varlevel[[cf_type]]
-    x = as.data.frame(x)
-    x["coef_type"] = cf_type
-    x["term"] = rownames(x)
-    rownames(x) = NULL
+  bs_summaries <- lapply(coef_types, function(cf_type) {
+    x <- bs_summaries[[cf_type]]
+    x <- as.data.frame(x)
+    x["coef_type"] <- cf_type
+    x["term"] <- rownames(x)
+    rownames(x) <- NULL
     x[c(4, 5, 1, 2, 3)]
   }) |>
     rbind_list()
+}
 
-  return(list(overall = CI_overall,
-              varlevel = CI_varlevel))
+get_bootstraps <- function(formula,
+                           data,
+                           n_bootstraps,
+                           type,
+                           pooled,
+                           baseline_invariant,
+                           conf_probs = conf_probs) {
+  runs_all <- replicate(n_bootstraps,
+    simplify = FALSE,
+    {
+      idx <- sample.int(
+        n = nrow(data),
+        size = nrow(data),
+        replace = TRUE
+      )
+      sample_data <- data[idx, ]
+      fitted_models <- fit_models(formula, sample_data)
+      calculate_coefs(
+        fitted_models,
+        type = type,
+        pooled = pooled,
+        baseline_invariant = baseline_invariant
+      )
+    }
+  )
+
+  overall_list <- lapply(
+    runs_all,
+    function(x) data.frame(x$overall, row.names = "overall")
+  )
+  varlevel_list <- lapply(runs_all, `[[`, "varlevel")
+
+  coef_types <- names(overall_list[[1]])
+  varlevel_coef_names <- rownames(varlevel_list[[1]])
+
+  bs_overall <- extract_bootstraps(
+    overall_list,
+    coef_types,
+    "overall",
+    conf_probs
+  )
+  rownames(bs_overall) <- bs_overall$coef_type
+  bs_overall <-
+    bs_overall[!(names(bs_overall) %in% c("coef_type", "term"))]
+
+  bs_varlevel <- extract_bootstraps(
+    varlevel_list,
+    coef_types,
+    varlevel_coef_names,
+    conf_probs
+  )
+
+  list(
+    overall = bs_overall,
+    varlevel = bs_varlevel
+  )
 }
 
 
@@ -494,7 +516,7 @@ OaxacaBlinderDecomp <-
 
 
     if (!is.null(n_bootstraps)) {
-      bootstrap_results = get_bootstrap_ci(
+      bootstrap_results = get_bootstraps(
         formula,
         data,
         n_bootstraps,
