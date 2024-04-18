@@ -493,6 +493,7 @@ get_bootstraps <- function(formula,
   ) |> setNames(names(bs_summaries))
 
   list(
+    gaps = bs_summaries$gaps,
     overall = bs_summaries$overall,
     varlevel = bs_summaries$varlevel
   )
