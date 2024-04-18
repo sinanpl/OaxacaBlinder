@@ -483,6 +483,11 @@ calc_decomp <- function(formula,
   fitted_models <- fit_models(formula, data)
   results <-
     calculate_coefs(fitted_models, type, pooled, baseline_invariant)
+  results$gaps <- calculate_gap(
+    formula,
+    model.frame(fitted_models$mod_a),
+    model.frame(fitted_models$mod_b)
+  )
   list(
     fitted_models = fitted_models,
     results = results
@@ -550,12 +555,6 @@ OaxacaBlinderDecomp <-
       baseline_invariant
     )
 
-    # collect descriptives
-    decomp$results$gaps <- calculate_gap(
-      formula,
-      model.frame(decomp$fitted_models$mod_a),
-      model.frame(decomp$fitted_models$mod_b)
-    )
     decomp$results$meta <- list(
       type = type,
       group_levels = gvar_to_num$group_levels,
