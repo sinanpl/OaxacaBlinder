@@ -413,7 +413,8 @@ get_bootstraps <- function(formula,
                            baseline_invariant,
                            conf_probs = conf_probs) {
   # Run the bootstraps
-  runs_all <- replicate(n_bootstraps,
+  runs_all <- replicate(
+    n_bootstraps,
     simplify = FALSE,
     {
       idx <- sample.int(
