@@ -422,13 +422,14 @@ get_bootstraps <- function(formula,
         replace = TRUE
       )
       sample_data <- data[idx, ]
-      fitted_models <- fit_models(formula, sample_data)
-      calculate_coefs(
-        fitted_models,
-        type = type,
-        pooled = pooled,
-        baseline_invariant = baseline_invariant
+      decomp <- calc_decomp(
+        formula,
+        sample_data,
+        type,
+        pooled,
+        baseline_invariant
       )
+      decomp$results
     }
   )
 
