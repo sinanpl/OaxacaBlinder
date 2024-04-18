@@ -474,6 +474,19 @@ get_bootstraps <- function(formula,
   )
 }
 
+calc_decomp <- function(formula,
+                        data,
+                        type,
+                        pooled,
+                        baseline_invariant) {
+  fitted_models <- fit_models(formula, data)
+  results <-
+    calculate_coefs(fitted_models, type, pooled, baseline_invariant)
+  list(
+    fitted_models = fitted_models,
+    results = results
+  )
+}
 
 #' Run a Blinder-Oaxaca decomposition
 #'
@@ -527,18 +540,22 @@ OaxacaBlinderDecomp <-
     input_data = data
     gvar_to_num = modify_group_var_to_dummy(input_data, formula)
     data = gvar_to_num$data
-    fitted_models <- fit_models(formula, data)
-    results <-
-      calculate_coefs(fitted_models, type, pooled, baseline_invariant)
 
+    decomp <- calc_decomp(
+      formula,
+      data,
+      type,
+      pooled,
+      baseline_invariant
+    )
 
     # collect descriptives
-    results$gaps <- calculate_gap(
+    decomp$results$gaps <- calculate_gap(
       formula,
-      model.frame(fitted_models$mod_a),
-      model.frame(fitted_models$mod_b)
+      model.frame(decomp$fitted_models$mod_a),
+      model.frame(decomp$fitted_models$mod_b)
     )
-    results$meta <- list(
+    decomp$results$meta <- list(
       type = type,
       group_levels = gvar_to_num$group_levels,
       formula = deparse(formula),
@@ -558,9 +575,9 @@ OaxacaBlinderDecomp <-
         baseline_invariant = baseline_invariant,
         conf_probs = conf_probs
       )
-      results$bootstraps = bootstrap_results
+      decomp$results$bootstraps = bootstrap_results
     }
 
-    class(results) <- "OaxacaBlinderDecomp"
-    results
+    class(decomp$results) <- "OaxacaBlinderDecomp"
+    decomp$results
   }
