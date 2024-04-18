@@ -351,50 +351,50 @@ calculate_coefs <-
          varlevel = variable_level_results)
   }
 
-extract_coeftype_bootstraps <- function(coef_type,
+extract_coeftype_bootstraps <- function(term_type,
                                         runs,
                                         coef_names) {
   # One list element per coefficient name
   lapply(
     coef_names,
     function(cfname) {
-      vapply(runs, `[`, double(1), cfname, coef_type)
+      vapply(runs, `[`, double(1), cfname, term_type)
     }
   ) |>
     setNames(coef_names)
 }
 
 extract_bootstrap_estimates <- function(runs,
-                                        coef_types,
+                                        term_types,
                                         coef_names) {
-  # 1 row per run, 1 column per coefficient, 1 df per coef_type
+  # 1 row per run, 1 column per coefficient, 1 df per term_type
   bs_estimates <-
-    lapply(coef_types, function(coef_type) {
+    lapply(term_types, function(term_type) {
       data.frame(
-        extract_coeftype_bootstraps(coef_type, runs, coef_names),
+        extract_coeftype_bootstraps(term_type, runs, coef_names),
         check.names = FALSE
       )
     }) |>
-    setNames(coef_types)
+    setNames(term_types)
 
   bs_estimates
 }
 
 summarize_bootstraps <- function(bs_estimates, conf_probs) {
-  # coef_type, term, summary type in columns; 1 df per coef_type
+  # term_type, term, summary type in columns; 1 df per term_type
   bs_summaries_list <-
     lapply(
       names(bs_estimates),
-      function(coef_type) {
-        se <- lapply(bs_estimates[[coef_type]], sd, na.rm = TRUE)
-        ci <- lapply(bs_estimates[[coef_type]], quantile, conf_probs)
+      function(term_type) {
+        se <- lapply(bs_estimates[[term_type]], sd, na.rm = TRUE)
+        ci <- lapply(bs_estimates[[term_type]], quantile, conf_probs)
         summ <- data.frame(
           se = do.call(rbind, se),
           do.call(rbind, ci),
           check.names = FALSE
         )
         summ <-
-          cbind(coef_type = coef_type, term = rownames(summ), summ)
+          cbind(coef_type = term_type, term = rownames(summ), summ)
         rownames(summ) <- NULL
         summ
       }
@@ -434,6 +434,10 @@ get_bootstraps <- function(formula,
   )
 
   # Make each type of list at same grain
+  gaps_list <- lapply(
+    runs_all,
+    function(x) data.frame(x$gaps, row.names = "gaps")
+  )
   overall_list <- lapply(
     runs_all,
     function(x) data.frame(x$overall, row.names = "overall")
@@ -441,33 +445,52 @@ get_bootstraps <- function(formula,
   varlevel_list <- lapply(runs_all, `[[`, "varlevel")
 
   # Extract estimates for each type of list
+  gap_types <- names(gaps_list[[1]])
   coef_types <- names(overall_list[[1]])
   varlevel_coef_names <- rownames(varlevel_list[[1]])
 
   extraction_args <- list(
+    gaps =
+      list(
+        runs = gaps_list,
+        term_types = gap_types,
+        coef_names = "gaps"
+      ),
     overall =
-      list(runs = overall_list, coef_names = "overall"),
+      list(
+        runs = overall_list,
+        term_types = coef_types,
+        coef_names = "overall"
+      ),
     varlevel =
-      list(runs = varlevel_list, coef_names = varlevel_coef_names)
+      list(
+        runs = varlevel_list,
+        term_types = coef_types,
+        coef_names = varlevel_coef_names
+      )
   )
 
   bs_estimates <- lapply(
     extraction_args,
-    function(x) extract_bootstrap_estimates(
-      runs = x$runs,
-      coef_types = coef_types,
-      coef_names = x$coef_names
-    )
+    function(x) do.call(extract_bootstrap_estimates, x)
   )
   # Summarize estimates for each type of list
   bs_summaries <-
     lapply(bs_estimates, summarize_bootstraps, conf_probs)
 
   # Move coarser metrics back up a level
-  rownames(bs_summaries$overall) <- bs_summaries$overall$coef_type
-  bs_summaries$overall <-
-    bs_summaries$overall[!(names(bs_summaries$overall)
-                           %in% c("coef_type", "term"))]
+  bs_summaries <- lapply(
+    names(bs_summaries),
+    function(x) {
+      if (x %in% c("gaps", "overall")) {
+        rownames(bs_summaries[[x]]) <- bs_summaries[[x]]$coef_type
+        bs_summaries[[x]] <-
+          bs_summaries[[x]][!(names(bs_summaries[[x]])
+                              %in% c("coef_type", "term"))]
+      }
+      bs_summaries[[x]]
+    }
+  ) |> setNames(names(bs_summaries))
 
   list(
     overall = bs_summaries$overall,
