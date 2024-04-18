@@ -471,7 +471,8 @@ get_bootstraps <- function(formula,
 
   list(
     overall = bs_summaries$overall,
-    varlevel = bs_summaries$varlevel
+    varlevel = bs_summaries$varlevel,
+    dists = bs_estimates
   )
 }
 
