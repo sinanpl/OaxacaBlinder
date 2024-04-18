@@ -436,7 +436,7 @@ get_bootstraps <- function(formula,
   # Make each type of list at same grain
   overall_list <- lapply(
     runs_all,
-    function(x) data.frame(x$overall, row.names = "overall")
+    function(x) data.frame(x$overall, row.names = "estimate")
   )
   varlevel_list <- lapply(runs_all, `[[`, "varlevel")
 
@@ -446,7 +446,7 @@ get_bootstraps <- function(formula,
 
   extraction_args <- list(
     overall =
-      list(runs = overall_list, coef_names = "overall"),
+      list(runs = overall_list, coef_names = "estimate"),
     varlevel =
       list(runs = varlevel_list, coef_names = varlevel_coef_names)
   )
