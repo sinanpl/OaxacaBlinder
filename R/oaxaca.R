@@ -434,6 +434,36 @@ get_bootstraps <- function(formula,
     }
   )
 
+  # Remove runs where sums don't equal gaps, and complain
+  bs_checksums <-
+    vapply(
+      X = runs_all,
+      FUN = function(x) {
+        isTRUE(all.equal(sum(x$varlevel[!(names(x$varlevel)
+                                          %in% c("unexplained_a", "unexplained_b"))],
+                             na.rm = FALSE),
+                         x$gaps$gap))
+      },
+      FUN.VALUE = logical(1)
+    )
+  if (sum(bs_checksums) == 0) {
+    stop("Sum of estimates did not match gap between groups
+      in any bootstrap runs.
+      This is a bug.  Please report it at
+      https://github.com/sinanpl/OaxacaBlinder/issues .")
+  } else if (sum(!bs_checksums) > 0) {
+    runs_all <- runs_all[bs_checksums]
+    warning(
+      paste(
+        "Sum of estimates did not match gap between groups in",
+        sum(!bs_checksums), "bootstrap runs and were discarded.",
+        sum(bs_checksums), "runs remain.",
+        "This is a bug.  Please report it at
+          https://github.com/sinanpl/OaxacaBlinder/issues ."
+      )
+    )
+  }
+
   # Make each type of list at same grain
   gaps_list <- lapply(
     runs_all,
