@@ -1,8 +1,8 @@
 test_that("sums check when some bootstraps have 0 variance", {
   most_foreign_advdeg <-
     chicago_long$foreign_born &
-    chicago_long$education == "advanced.degree" &
-    chicago_long$age < 49 # all but 3
+      chicago_long$education == "advanced.degree" &
+      chicago_long$age < 49 # all but 3
   chicago_long_mod <-
     chicago_long[!most_foreign_advdeg, ]
 
