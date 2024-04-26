@@ -160,9 +160,8 @@ extract_betas_EX <- function(mod, baseline_invariant) {
 }
 
 join_terms <-
-  function(
-      x,
-      y) {
+  function(x,
+           y) {
     x_and_y <-
       merge(x = x, y = y, by = "row.names", all = TRUE)
     rownames(x_and_y) <- x_and_y$Row.names
