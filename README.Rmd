@@ -56,7 +56,7 @@ dplyr::glimpse(chicago_long)
   - `jann`: The parameters of a model **including** the group variable
 
 ```{r}
-twofold = OaxacaBlinderDecomp(
+twofold <- OaxacaBlinderDecomp(
   formula = real_wage ~ age + education | female,
   data = chicago_long,
   type = "twofold",
@@ -75,13 +75,13 @@ coef(twofold)
 Or with bootstrapped confidence intervals for variable level results
 
 ```{r}
-coef(twofold, ci=TRUE)
+coef(twofold, ci = TRUE)
 ```
 
 ### Threefold decomposition
 
 ```{r}
-threefold = OaxacaBlinderDecomp(
+threefold <- OaxacaBlinderDecomp(
   real_wage ~ age + education | female, chicago_long,
   type = "twofold",
   pooled = "jann",
