@@ -6,11 +6,11 @@ testthat::test_that("threefold matches other calcs", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + advanced.degree |
-    foreign.born
+      foreign.born
 
   # Calc by hand ----
-  foreign1 <- chicago[chicago$foreign.born == 1 ,]
-  foreign0 <- chicago[chicago$foreign.born == 0 ,]
+  foreign1 <- chicago[chicago$foreign.born == 1, ]
+  foreign0 <- chicago[chicago$foreign.born == 0, ]
   fit_foreign1 <- lm(fmla_lm_dum, data = foreign1)
   fit_foreign0 <- lm(fmla_lm_dum, data = foreign0)
   EX_foreign1 <- apply(model.matrix(fit_foreign1), 2, mean)
@@ -61,7 +61,6 @@ testthat::test_that("threefold matches other calcs", {
     obd_3f_terms,
     oax_3f_terms
   )
-
 })
 
 testthat::test_that("neumark twofold matches manual calcs", {
@@ -72,11 +71,11 @@ testthat::test_that("neumark twofold matches manual calcs", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + advanced.degree |
-    foreign.born
+      foreign.born
 
   # Calc by hand ----
-  foreign1 <- chicago[chicago$foreign.born == 1 ,]
-  foreign0 <- chicago[chicago$foreign.born == 0 ,]
+  foreign1 <- chicago[chicago$foreign.born == 1, ]
+  foreign0 <- chicago[chicago$foreign.born == 0, ]
   fit_foreign1 <- lm(fmla_lm_dum, data = foreign1)
   fit_foreign0 <- lm(fmla_lm_dum, data = foreign0)
   fit_pooled <- lm(fmla_lm_dum, data = chicago)
@@ -116,11 +115,10 @@ testthat::test_that("neumark twofold matches manual calcs", {
     obd_2f_terms,
     manual_2f_terms
   )
-
 })
 
 testthat::test_that("threefold categ. and dummy results match", {
-  conform_educ_results <- function (obd) {
+  conform_educ_results <- function(obd) {
     rownames(obd$varlevel) <-
       gsub("education", "", rownames(obd$varlevel))
     obd$varlevel <-
@@ -147,11 +145,11 @@ testthat::test_that("threefold categ. and dummy results match", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
-    foreign.born
+      foreign.born
   fmla_tooyoung_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
-    too_young
+      too_young
 
   # Test without dropped items ----
   no_drops_3f_catg <-
@@ -194,11 +192,10 @@ testthat::test_that("threefold categ. and dummy results match", {
     with_drops_3f_catg,
     with_drops_3f_dum
   )
-
 })
 
 testthat::test_that("twofold categ. and dummy results match", {
-  conform_educ_results <- function (obd) {
+  conform_educ_results <- function(obd) {
     rownames(obd$varlevel) <-
       gsub("education", "", rownames(obd$varlevel))
     obd$varlevel <-
@@ -225,11 +222,11 @@ testthat::test_that("twofold categ. and dummy results match", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
-    foreign.born
+      foreign.born
   fmla_tooyoung_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
-    too_young
+      too_young
 
   # Test without dropped items ----
   no_drops_2f_catg <-
@@ -272,7 +269,6 @@ testthat::test_that("twofold categ. and dummy results match", {
     with_drops_2f_catg,
     with_drops_2f_dum
   )
-
 })
 
 test_that("0-variance dummy IV results match Stata", {
@@ -283,7 +279,7 @@ test_that("0-variance dummy IV results match Stata", {
   fmla_tooyoung_dum <-
     ln_real_wage ~
     LTHS + some_college + college + high_school |
-    too_young
+      too_young
 
   obd <-
     OaxacaBlinderDecomp(
@@ -381,7 +377,7 @@ test_that("strange categ. level names don't change results", {
       chicago_long_mod$education
     )
 
-    obd_sensible_level <-
+  obd_sensible_level <-
     OaxacaBlinderDecomp(
       ln_real_wage ~ education | foreign_born,
       chicago_long,
