@@ -6,11 +6,11 @@ testthat::test_that("threefold matches other calcs", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + advanced.degree |
-    foreign.born
+      foreign.born
 
   # Calc by hand ----
-  foreign1 <- chicago[chicago$foreign.born == 1 ,]
-  foreign0 <- chicago[chicago$foreign.born == 0 ,]
+  foreign1 <- chicago[chicago$foreign.born == 1, ]
+  foreign0 <- chicago[chicago$foreign.born == 0, ]
   fit_foreign1 <- lm(fmla_lm_dum, data = foreign1)
   fit_foreign0 <- lm(fmla_lm_dum, data = foreign0)
   EX_foreign1 <- apply(model.matrix(fit_foreign1), 2, mean)
@@ -61,7 +61,6 @@ testthat::test_that("threefold matches other calcs", {
     obd_3f_terms,
     oax_3f_terms
   )
-
 })
 
 testthat::test_that("neumark twofold matches manual calcs", {
@@ -72,11 +71,11 @@ testthat::test_that("neumark twofold matches manual calcs", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + advanced.degree |
-    foreign.born
+      foreign.born
 
   # Calc by hand ----
-  foreign1 <- chicago[chicago$foreign.born == 1 ,]
-  foreign0 <- chicago[chicago$foreign.born == 0 ,]
+  foreign1 <- chicago[chicago$foreign.born == 1, ]
+  foreign0 <- chicago[chicago$foreign.born == 0, ]
   fit_foreign1 <- lm(fmla_lm_dum, data = foreign1)
   fit_foreign0 <- lm(fmla_lm_dum, data = foreign0)
   fit_pooled <- lm(fmla_lm_dum, data = chicago)
@@ -116,31 +115,32 @@ testthat::test_that("neumark twofold matches manual calcs", {
     obd_2f_terms,
     manual_2f_terms
   )
-
 })
 
 testthat::test_that("categorical and dummy results match", {
   run_catg_and_dum <-
-    function(
-      data_catg,
-      data_dum,
-      fmla_catg,
-      fmla_dum,
-      obd_type
-    ) {
+    function(data_catg,
+             data_dum,
+             fmla_catg,
+             fmla_dum,
+             obd_type) {
       obd_catg <-
-        OaxacaBlinderDecomp(formula = fmla_catg,
-                            data = data_catg,
-                            type = obd_type)
+        OaxacaBlinderDecomp(
+          formula = fmla_catg,
+          data = data_catg,
+          type = obd_type
+        )
       obd_catg$varlevel <-
         obd_catg$varlevel[order(obd_catg$varlevel[, 1]), ]
       rownames(obd_catg$varlevel) <- NULL
       obd_catg$meta <- NULL
 
       obd_dum <-
-        OaxacaBlinderDecomp(formula = fmla_dum,
-                            data = data_dum,
-                            type = obd_type)
+        OaxacaBlinderDecomp(
+          formula = fmla_dum,
+          data = data_dum,
+          type = obd_type
+        )
       obd_dum$varlevel <-
         obd_dum$varlevel[order(obd_dum$varlevel[, 1]), ]
       rownames(obd_dum$varlevel) <- NULL
@@ -168,11 +168,11 @@ testthat::test_that("categorical and dummy results match", {
   fmla_foreign_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
-    foreign.born
+      foreign.born
   fmla_tooyoung_dum <-
     ln.real.wage ~
     LTHS + some.college + college + high.school |
-    too_young
+      too_young
 
   # Test without dropped items ----
   no_drops_3f <-
@@ -227,5 +227,4 @@ testthat::test_that("categorical and dummy results match", {
     with_drops_2f$obd_catg,
     with_drops_2f$obd_dum
   )
-
 })
