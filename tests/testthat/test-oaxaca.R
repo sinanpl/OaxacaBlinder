@@ -95,4 +95,3 @@ test_that("twofold results with bootstraps haven't changed", {
   testthat::expect_snapshot(summary(twofold))
   testthat::expect_snapshot(coef(twofold, ci = TRUE))
 })
-
