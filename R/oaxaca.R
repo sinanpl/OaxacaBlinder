@@ -451,7 +451,6 @@ get_bootstrap_ci <- function(formula,
         baseline_invariant = baseline_invariant
       )
       out$gaps <- calculate_gap(
-        formula,
         fitted_models$group_a$y,
         fitted_models$group_b$y
       )
