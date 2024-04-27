@@ -410,9 +410,11 @@ OaxacaBlinderDecomp <-
 
 
     # collect descriptives
-    results$gaps <- calculate_gap(formula,
-                                  model.frame(fitted_models$mod_a),
-                                  model.frame(fitted_models$mod_b))
+    results$gaps <- calculate_gap(
+      formula,
+      model.frame(fitted_models$mod_a),
+      model.frame(fitted_models$mod_b)
+    )
     results$meta <- list(
       type = type,
       group_levels = gvar_to_num$group_levels,
