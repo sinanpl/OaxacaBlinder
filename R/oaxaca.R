@@ -427,119 +427,145 @@ calculate_coefs <-
     )
   }
 
-get_bootstrap_ests <- function(formula,
-                               data,
-                               n_bootstraps,
-                               type,
-                               pooled,
-                               baseline_invariant,
-                               conf_probs = conf_probs) {
-  runs <- replicate(
-    n_bootstraps,
+extract_coeftype_bootstraps <- function(coef_type,
+                                        runs,
+                                        coef_names) {
+  # One list element per coefficient name
+  lapply(
+    coef_names,
+    function(cfname) {
+      vapply(runs, `[`, double(1), cfname, coef_type)
+    }
+  ) |>
+    setNames(coef_names)
+}
+
+extract_bootstrap_estimates <- function(runs,
+                                        coef_types,
+                                        coef_names) {
+  # 1 row per run, 1 column per coefficient, 1 df per coef_type
+  bs_estimates <-
+    lapply(coef_types, function(coef_type) {
+      data.frame(
+        extract_coeftype_bootstraps(coef_type, runs, coef_names),
+        check.names = FALSE
+      )
+    }) |>
+    setNames(coef_types)
+
+  bs_estimates
+}
+
+summarize_bootstraps <- function(bs_estimates, conf_probs) {
+  # coef_type, term, summary type in columns; 1 df per coef_type
+  bs_summaries_list <-
+    lapply(
+      names(bs_estimates),
+      function(coef_type) {
+        se <- lapply(bs_estimates[[coef_type]], sd, na.rm = TRUE)
+        ci <- lapply(bs_estimates[[coef_type]], quantile, conf_probs)
+        summ <- data.frame(
+          se = do.call(rbind, se),
+          do.call(rbind, ci),
+          check.names = FALSE
+        )
+        summ <-
+          cbind(coef_type = coef_type, term = rownames(summ), summ)
+        rownames(summ) <- NULL
+        summ
+      }
+    )
+  # coef_type, term, summary type in columns
+  bs_summaries <- do.call(rbind, bs_summaries_list)
+
+  bs_summaries
+}
+
+get_bootstraps <- function(formula,
+                           data,
+                           n_bootstraps,
+                           type,
+                           pooled,
+                           baseline_invariant,
+                           conf_probs = conf_probs) {
+  # Run the bootstraps
+  runs_all <- replicate(n_bootstraps,
     simplify = FALSE,
     {
-      idx <- sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
+      idx <- sample.int(
+        n = nrow(data),
+        size = nrow(data),
+        replace = TRUE
+      )
       sample_data <- data[idx, ]
-      fitted_models <- fit_models(formula, sample_data)
-      out <- calculate_coefs(
-        fitted_models,
-        type = type,
-        pooled = pooled,
-        baseline_invariant = baseline_invariant
+      decomp <- calc_decomp(
+        formula,
+        sample_data,
+        type,
+        pooled,
+        baseline_invariant
       )
-      out$gaps <- calculate_gap(
-        fitted_models$group_a$y,
-        fitted_models$group_b$y
-      )
-      out
+      decomp$results
     }
   )
 
-  bs_checksums <-
-    vapply(
-      X = runs,
-      FUN = function(x) {
-        isTRUE(all.equal(
-          sum(
-            x$varlevel[!(names(x$varlevel)
-            %in% c("unexplained_a", "unexplained_b"))],
-            na.rm = FALSE
-          ),
-          x$gaps$gap
-        ))
-      },
-      FUN.VALUE = logical(1)
-    )
-  if (sum(bs_checksums) == 0) {
-    stop("Sum of estimates did not match gap between groups
-      in any bootstrap runs.
-      This is a bug.  Please report it at
-      https://github.com/sinanpl/OaxacaBlinder/issues .")
-  } else if (sum(!bs_checksums) > 0) {
-    runs <- runs[bs_checksums]
-    warning(
-      paste(
-        "Sum of estimates did not match gap between groups in",
-        sum(!bs_checksums), "bootstrap runs and were discarded.",
-        sum(bs_checksums), "runs remain.",
-        "This is a bug.  Please report it at
-          https://github.com/sinanpl/OaxacaBlinder/issues ."
-      )
-    )
-  }
+  # Make each type of list at same grain
+  overall_list <- lapply(
+    runs_all,
+    function(x) data.frame(x$overall, row.names = "estimate")
+  )
+  varlevel_list <- lapply(runs_all, `[[`, "varlevel")
 
-  gaps_list <- lapply(runs, `[[`, "gaps")
-  overall_level_list <- lapply(runs, `[[`, "overall")
-  varlevel_list <- lapply(runs, `[[`, "varlevel")
-
-  gap_types <- names(gaps_list[[1]])
-  coef_types <- names(overall_level_list[[1]])
+  # Extract estimates for each type of list
+  coef_types <- names(overall_list[[1]])
   varlevel_coef_names <- rownames(varlevel_list[[1]])
 
-  bs_gaps <- do.call(rbind, {
-    lapply(gap_types, function(gaptype) {
-      estimates <- sapply(gaps_list, `[[`, gaptype)
-      c(
-        se = sd(estimates, na.rm = TRUE),
-        quantile(estimates, probs = conf_probs)
+  extraction_args <- list(
+    overall =
+      list(runs = overall_list, coef_names = "estimate"),
+    varlevel =
+      list(runs = varlevel_list, coef_names = varlevel_coef_names)
+  )
+
+  bs_estimates <- lapply(
+    extraction_args,
+    function(x) {
+      extract_bootstrap_estimates(
+        runs = x$runs,
+        coef_types = coef_types,
+        coef_names = x$coef_names
       )
-    }) |> setNames(gap_types)
-  })
+    }
+  )
+  # Summarize estimates for each type of list
+  bs_summaries <-
+    lapply(bs_estimates, summarize_bootstraps, conf_probs)
 
-  bs_overall <- do.call(rbind, {
-    lapply(coef_types, function(coeftype) {
-      quantile(sapply(overall_level_list, `[[`, coeftype), probs = conf_probs)
-    }) |> setNames(coef_types)
-  })
+  # Move coarser metrics back up a level
+  rownames(bs_summaries$overall) <- bs_summaries$overall$coef_type
+  bs_summaries$overall <-
+    bs_summaries$overall[!(names(bs_summaries$overall)
+    %in% c("coef_type", "term"))]
 
-  # helper function
-  rbind_list <- function(L) do.call(rbind, L)
-
-  bs_varlevel <- lapply(coef_types, function(cftype) {
-    lapply(varlevel_coef_names, function(coefname) {
-      quantile(sapply(varlevel_list, `[`, coefname, cftype), probs = conf_probs)
-    }) |> setNames(varlevel_coef_names)
-  }) |>
-    setNames(coef_types) |>
-    lapply(rbind_list)
-
-  bs_varlevel <- lapply(coef_types, function(cf_type) {
-    x <- bs_varlevel[[cf_type]]
-    x <- as.data.frame(x)
-    x["coef_type"] <- cf_type
-    x["term"] <- rownames(x)
-    rownames(x) <- NULL
-    x[c(3, 4, 1, 2)]
-  }) |>
-    rbind_list()
-
-  return(list(
-    gaps = bs_gaps,
-    overall = bs_overall,
-    varlevel = bs_varlevel
-  ))
+  list(
+    overall = bs_summaries$overall,
+    varlevel = bs_summaries$varlevel
+  )
 }
 
+calc_decomp <- function(formula,
+                        data,
+                        type,
+                        pooled,
+                        baseline_invariant) {
+  fitted_models <- fit_models(formula, data)
+  results <-
+    calculate_coefs(fitted_models, type, pooled, baseline_invariant)
+  list(
+    fitted_models = fitted_models,
+    results = results
+  )
+}
 
 #' Run a Blinder-Oaxaca decomposition
 #'
@@ -593,17 +619,21 @@ OaxacaBlinderDecomp <-
     input_data <- data
     gvar_to_num <- modify_group_var_to_dummy(input_data, formula)
     data <- gvar_to_num$data
-    fitted_models <- fit_models(formula, data)
-    results <-
-      calculate_coefs(fitted_models, type, pooled, baseline_invariant)
 
+    decomp <- calc_decomp(
+      formula,
+      data,
+      type,
+      pooled,
+      baseline_invariant
+    )
 
     # collect descriptives
-    results$gaps <- calculate_gap(
-      fitted_models$group_a$y,
-      fitted_models$group_b$y
+    decomp$results$gaps <- calculate_gap(
+      decomp$fitted_models$group_a$y,
+      decomp$fitted_models$group_b$y
     )
-    results$meta <- list(
+    decomp$results$meta <- list(
       type = type,
       group_levels = gvar_to_num$group_levels,
       formula = deparse(formula),
@@ -630,20 +660,18 @@ OaxacaBlinderDecomp <-
     )
 
     if (!is.null(n_bootstraps)) {
-      bootstrap_results <-
-        get_bootstrap_ests(
-          formula,
-          data,
-          n_bootstraps,
-          type = type,
-          pooled = pooled,
-          baseline_invariant = baseline_invariant,
-          conf_probs = conf_probs
-        )
-
-      results$bootstraps <- bootstrap_results
+      bootstrap_results <- get_bootstraps(
+        formula,
+        data,
+        n_bootstraps,
+        type = type,
+        pooled = pooled,
+        baseline_invariant = baseline_invariant,
+        conf_probs = conf_probs
+      )
+      decomp$results$bootstraps <- bootstrap_results
     }
 
-    class(results) <- "OaxacaBlinderDecomp"
-    results
+    class(decomp$results) <- "OaxacaBlinderDecomp"
+    decomp$results
   }
