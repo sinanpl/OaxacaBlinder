@@ -706,13 +706,13 @@ OaxacaBlinderDecomp <-
       https://github.com/sinanpl/OaxacaBlinder/issues ." =
         all.equal(
           sum(
-            results$varlevel[
-              !(names(results$varlevel)
+            decomp$results$varlevel[
+              !(names(decomp$results$varlevel)
               %in% c("unexplained_a", "unexplained_b"))
             ],
             na.rm = TRUE
           ),
-          results$gaps$gap
+          decomp$results$gaps$gap
         )
     )
 
