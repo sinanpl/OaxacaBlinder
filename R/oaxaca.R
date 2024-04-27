@@ -640,6 +640,7 @@ OaxacaBlinderDecomp <-
           baseline_invariant = baseline_invariant,
           conf_probs = conf_probs
         )
+
       results$bootstraps <- bootstrap_results
     }
 
