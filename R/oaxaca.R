@@ -438,6 +438,23 @@ OaxacaBlinderDecomp <-
       data = input_data
     )
 
+    # Check sum
+    stopifnot(
+      "Sum of estimates does not match gap between groups.
+      This is a bug.  Please report it at
+      https://github.com/sinanpl/OaxacaBlinder/issues ." =
+        all.equal(
+          sum(
+            results$varlevel[
+              !(names(results$varlevel)
+              %in% c("unexplained_a", "unexplained_b"))
+            ],
+            na.rm = TRUE
+          ),
+          results$gaps$gap
+        )
+    )
+
     if (!is.null(n_bootstraps)) {
       bootstrap_results <- get_bootstrap_ci(
         formula,
