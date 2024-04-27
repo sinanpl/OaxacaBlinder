@@ -115,7 +115,6 @@ testthat::test_that("neumark twofold matches manual calcs", {
     obd_2f_terms,
     manual_2f_terms
   )
-
 })
 
 testthat::test_that("threefold categ. and dummy results match", {
