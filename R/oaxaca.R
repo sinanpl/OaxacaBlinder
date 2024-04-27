@@ -38,43 +38,14 @@ make_decomp_dofile <- function(command, do_path, dta_file, est_file) {
   invisible(command)
 }
 
-#' Read estimates from Stata's Excel export
-#'
-#' This internal function reads the estimates produced by running
-#' Jann's \code{oaxaca} command in Stata.  The estimates should be
-#' exported to a file with extension \code{xlsx} or \code{xls}
-#' using Stata using the \code{etable} command, with the option
-#' \code{cstat(_r_b)} to ensure that standard errors are not
-#' included.
-#'
-#' @param path The path to the Excel file.
-#'
-#' @return A data frame with the same rows and columns as would be
-#'   produced in the \code{varlevel} element of the output of
-#'   \code{OaxacaBlinderDecomp} (though the rows might be in a
-#'   different order).
-read_stata_estimates <- function(path) {
-  stata_estimates <-
-    readxl::read_excel(
-      path = path,
-      col_names = c("name", "value"),
-      col_types = c("text", "numeric"),
-      skip = 1
-    )
-
-  drops <-
-    c(
-      "group_1", "group_2", "difference", "endowments",
-      "coefficients", "interaction", "N"
-    )
-
-  estimates <-
-    stata_estimates[!(stata_estimates$name %in% drops), ]
+clean_stata_estimates_3f <- function(estimates) {
+  # Split estimates into components
   n_x <- (nrow(estimates) - 1) / 3
   endowments <- estimates[1:n_x, ]
   coefficients <- estimates[(n_x + 1):(2 * n_x + 1), ]
   interactions <- estimates[(2 * n_x + 2):nrow(estimates), ]
 
+  # Use 0 as intercept for components that don't have one
   endowments_padded <- rbind(endowments, list("(Intercept)", 0))
   interactions_padded <- rbind(interactions, list("(Intercept)", 0))
 
@@ -87,9 +58,77 @@ read_stata_estimates <- function(path) {
   rownames(varlevel) <- endowments_padded[[1]]
   colnames(varlevel) <-
     c("endowments", "coefficients", "interaction")
+  # Move intercept to top
   varlevel_intfirst <-
     varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
   varlevel_intfirst
+}
+
+clean_stata_estimates_2f <- function(estimates) {
+  # Split estimates into components
+  n_x <- (nrow(estimates) - 1) / 2
+  explained <- estimates[1:n_x, ]
+  unexplained <- estimates[(n_x + 1):nrow(estimates), ]
+
+  # Use 0 as intercept for components that don't have one
+  explained_padded <- rbind(explained, list("(Intercept)", 0))
+
+  varlevel <-
+    cbind(
+      explained_padded[2],
+      unexplained[2]
+    )
+  rownames(varlevel) <- explained_padded[[1]]
+  colnames(varlevel) <-
+    c("explained", "unexplained")
+  # Move intercept to top
+  varlevel_intfirst <-
+    varlevel[c(nrow(varlevel), 1:(nrow(varlevel) - 1)), ]
+  varlevel_intfirst
+}
+
+#' Read estimates from Stata's Excel export
+#'
+#' This internal function reads the estimates produced by running
+#' Jann's \code{oaxaca} command in Stata.  The estimates should be
+#' exported to a file with extension \code{xlsx} or \code{xls}
+#' using Stata using the \code{etable} command, with the option
+#' \code{cstat(_r_b)} to ensure that standard errors are not
+#' included.
+#'
+#' @param path The path to the Excel file.
+#' @param type Either "twofold" or "threefold".
+#'
+#' @return A data frame with the same rows and columns as would be
+#'   produced in the \code{varlevel} element of the output of
+#'   \code{OaxacaBlinderDecomp} (though the rows might be in a
+#'   different order).
+read_stata_estimates <- function(path, type) {
+  stata_estimates <-
+    readxl::read_excel(
+      path = path,
+      col_names = c("name", "value"),
+      col_types = c("text", "numeric"),
+      skip = 1
+    )
+
+  drops <-
+    c(
+      "group_1", "group_2", "difference",
+      "endowments", "coefficients", "interaction",
+      "explained", "unexplained", "N"
+    )
+
+  estimates <-
+    stata_estimates[!(stata_estimates$name %in% drops), ]
+
+  if (type == "threefold") {
+    out <- clean_stata_estimates_3f(estimates)
+  }
+  if (type == "twofold") {
+    out <- clean_stata_estimates_2f(estimates)
+  }
+  out
 }
 
 parse_formula <- function(formula) {
@@ -405,20 +444,38 @@ get_bootstrap_ci <- function(formula,
       )
       sample_data <- data[idx, ]
       fitted_models <- fit_models(formula, sample_data)
-      calculate_coefs(
+      out <- calculate_coefs(
         fitted_models,
         type = type,
         pooled = pooled,
         baseline_invariant = baseline_invariant
       )
+      out$gaps <- calculate_gap(
+        formula,
+        fitted_models$group_a$y,
+        fitted_models$group_b$y
+      )
+      out
     }
   )
 
+  gaps_list <- lapply(bs, `[[`, "gaps")
   overall_level_list <- lapply(bs, `[[`, "overall")
   varlevel_list <- lapply(bs, `[[`, "varlevel")
 
+  gap_types <- names(gaps_list[[1]])
   coef_types <- names(overall_level_list[[1]])
   varlevel_coef_names <- rownames(varlevel_list[[1]])
+
+  CI_gaps <- do.call(rbind, {
+    lapply(gap_types, function(gaptype) {
+      estimates <- sapply(gaps_list, `[[`, gaptype)
+      c(
+        se = sd(estimates, na.rm = TRUE),
+        quantile(estimates, probs = conf_probs)
+      )
+    }) |> setNames(gap_types)
+  })
 
   CI_overall <- do.call(rbind, {
     lapply(coef_types, function(coeftype) {
@@ -458,6 +515,7 @@ get_bootstrap_ci <- function(formula,
     rbind_list()
 
   return(list(
+    gaps = CI_gaps,
     overall = CI_overall,
     varlevel = CI_varlevel
   ))
@@ -535,6 +593,22 @@ OaxacaBlinderDecomp <-
       data = input_data
     )
 
+    # Check sum
+    stopifnot(
+      "Sum of estimates does not match gap between groups.
+      This is a bug.  Please report it at
+      https://github.com/sinanpl/OaxacaBlinder/issues ." =
+        all.equal(
+          sum(
+            results$varlevel[
+              !(names(results$varlevel)
+              %in% c("unexplained_a", "unexplained_b"))
+            ],
+            na.rm = TRUE
+          ),
+          results$gaps$gap
+        )
+    )
 
     if (!is.null(n_bootstraps)) {
       bootstrap_results <- get_bootstrap_ci(

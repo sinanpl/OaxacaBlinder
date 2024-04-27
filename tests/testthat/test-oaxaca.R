@@ -115,6 +115,7 @@ testthat::test_that("neumark twofold matches manual calcs", {
     obd_2f_terms,
     manual_2f_terms
   )
+
 })
 
 testthat::test_that("threefold categ. and dummy results match", {
@@ -401,4 +402,15 @@ test_that("strange categ. level names don't change results", {
     obd_silly_level,
     obd_sensible_level
   )
+})
+
+test_that("bootstrapped gaps haven't changed", {
+  set.seed(1973)
+  obd <- OaxacaBlinderDecomp(
+    formula = ln_real_wage ~ age + education | female,
+    data = chicago_long,
+    baseline_invariant = TRUE,
+    n_bootstraps = 10
+  )
+  testthat::expect_snapshot(obd$bootstraps$gaps)
 })
