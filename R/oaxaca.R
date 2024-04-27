@@ -183,11 +183,9 @@ modify_group_var_to_dummy <- function(data, formula) {
   )
 }
 
-calculate_gap <- function(formula, data_a, data_b) {
-  fml_comp <- parse_formula(formula)
-
-  EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
-  EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
+calculate_gap <- function(y_a, y_b) {
+  EY_a <- mean(y_a, na.rm = TRUE)
+  EY_b <- mean(y_b, na.rm = TRUE)
 
   gap <- EY_a - EY_b
   pct_gap <- gap / EY_a
@@ -200,9 +198,31 @@ calculate_gap <- function(formula, data_a, data_b) {
   )
 }
 
+assemble_model <- function(formula, data) {
+  fml_comp <- parse_formula(formula)
+  # Get DV as it will be in model
+  y <- model.frame(formula, data)[[fml_comp$dep_var]]
+  # Expand matrix manually to keep all factor levels
+  modmat <- model.matrix(formula, data)
+  # Save original formula terms
+  terms <- terms(formula)
+  # Fit w/ all levels and clean names except for intercepts
+  fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
+
+  list(y = y, modmat = modmat, terms = terms, fit = fit)
+}
+
 fit_models <- function(formula, data) {
   # get formula components
   fml_comp <- parse_formula(formula)
+
+  # Convert character cols to factors
+  data <-
+    lapply(
+      data,
+      function(x) if (is.character(x)) as.factor(x) else x
+    ) |>
+    data.frame()
 
   # filter datasets for group a/b
   idx <- data[[fml_comp$group_var]] == 0
@@ -230,34 +250,32 @@ fit_models <- function(formula, data) {
     as.formula(fml_reg_pooled_neumark1988)
   fml_reg_pooled_jann2008 <- as.formula(fml_reg_pooled_jann2008)
 
-  mod_a <- lm(fml_reg, data = data_a)
-  mod_b <- lm(fml_reg, data = data_b)
-  mod_pooled_neumark1988 <- lm(fml_reg_pooled_neumark1988, data = data)
-  mod_pooled_jann2008 <- lm(fml_reg_pooled_jann2008, data = data)
-
-  return(
-    list(
-      mod_a = mod_a,
-      mod_b = mod_b,
-      mod_pooled_neumark1988 = mod_pooled_neumark1988,
-      mod_pooled_jann2008 = mod_pooled_jann2008
-    )
+  model_args <- list(
+    group_a = list(fml_reg, data_a),
+    group_b = list(fml_reg, data_b),
+    pooled_neumark1988 = list(fml_reg_pooled_neumark1988, data),
+    pooled_jann2008 = list(fml_reg_pooled_jann2008, data)
   )
+  models <-
+    lapply(model_args, function(x) assemble_model(x[[1]], x[[2]]))
+  models
 }
 
 extract_betas_EX <- function(mod, baseline_invariant) {
-  modmat <- model.matrix(mod)
-  betas <- coef(mod)
+  modmat_orig <- mod$modmat
+  modmat <- model.matrix(mod$fit)
+  betas <- coef(mod$fit)
+  betas[is.na(betas)] <- 0
 
   # if baseline variant;
   # identify factor variables and associated dummy indicators
   # apply gardeazabal2004 ommitted baseline correction per set of dummy variables
   if (baseline_invariant) {
     # identify factor terms
-    factor_variables <- names(attr(modmat, "contrasts"))
+    factor_variables <- names(attr(modmat_orig, "contrasts"))
 
     terms <- attr(mod$terms, "term.labels")
-    term_assignments_i <- attr(modmat, "assign") # intercept = 0; gets removed
+    term_assignments_i <- attr(modmat_orig, "assign") # intercept = 0; gets removed
     term_assignments <- terms[term_assignments_i]
 
     # for each dummy encoded term; adjust the betas; save and add a baseline coef to beta and modmat
@@ -284,6 +302,8 @@ extract_betas_EX <- function(mod, baseline_invariant) {
     }
   }
 
+  # Fix intercept renaming
+  colnames(modmat)[1] <- colnames(model.matrix(mod$fit))[1]
   EX <- apply(modmat, mean, MARGIN = 2)
 
   return(list(
@@ -311,19 +331,19 @@ calculate_coefs <-
     r <- lapply(fitted_models, extract_betas_EX, baseline_invariant)
 
     # extract model matrix averages
-    EX_a <- r$mod_a$EX
-    EX_b <- r$mod_b$EX
+    EX_a <- r$group_a$EX
+    EX_b <- r$group_b$EX
 
     # extract betas
-    B_a <- r$mod_a$betas
-    B_b <- r$mod_b$betas
+    B_a <- r$group_a$betas
+    B_b <- r$group_b$betas
 
     if (pooled == "neumark") {
-      EX_pool <- r$mod_pooled_neumark1988$EX
-      B_pool <- r$mod_pooled_neumark1988$betas
+      EX_pool <- r$pooled_neumark1988$EX
+      B_pool <- r$pooled_neumark1988$betas
     } else {
-      EX_pool <- r$mod_pooled_jann2008$EX[names(EX_a)] # drops groupvar col
-      B_pool <- r$mod_pooled_jann2008$betas[names(B_a)]
+      EX_pool <- r$pooled_jann2008$EX[names(EX_a)] # drops groupvar col
+      B_pool <- r$pooled_jann2008$betas[names(B_a)]
     }
 
     # join terms properly
@@ -346,6 +366,9 @@ calculate_coefs <-
           SIMPLIFY = FALSE
         )
       )
+
+    rownames(terms)[which(rownames(terms) == "X.Intercept.")] <-
+      "(Intercept)"
 
     # calculate
     if (type == "threefold") {
@@ -429,8 +452,8 @@ get_bootstrap_ci <- function(formula,
       )
       out$gaps <- calculate_gap(
         formula,
-        model.frame(fitted_models$mod_a),
-        model.frame(fitted_models$mod_b)
+        fitted_models$group_a$y,
+        fitted_models$group_b$y
       )
       out
     }
@@ -558,9 +581,8 @@ OaxacaBlinderDecomp <-
 
     # collect descriptives
     results$gaps <- calculate_gap(
-      formula,
-      model.frame(fitted_models$mod_a),
-      model.frame(fitted_models$mod_b)
+      fitted_models$group_a$y,
+      fitted_models$group_b$y
     )
     results$meta <- list(
       type = type,
