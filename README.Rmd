@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 
 [![experimental](http://badges.github.io/stability-badges/dist/experimental.svg)](http://github.com/badges/stability-badges)
-
+[![R-CMD-check](https://github.com/sinanpl/OaxacaBlinder/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sinanpl/OaxacaBlinder/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 This is an R implementation of `OaxacaBlinder` decomposition that comes with
