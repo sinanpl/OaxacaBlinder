@@ -43,7 +43,7 @@ A list with elements \code{overall}, \code{varlevel}, \code{gaps},
 Run a Blinder-Oaxaca decomposition
 }
 \examples{
-twofold = OaxacaBlinderDecomp(
+twofold <- OaxacaBlinderDecomp(
   formula = real_wage ~ age + education | female,
   data = chicago_long,
   type = "twofold",
@@ -52,9 +52,9 @@ twofold = OaxacaBlinderDecomp(
 )
 summary(twofold)
 coef(twofold)
-coef(twofold, ci=TRUE)
+coef(twofold, ci = TRUE)
 
-threefold = OaxacaBlinderDecomp(
+threefold <- OaxacaBlinderDecomp(
   real_wage ~ age + education | female, chicago_long,
   type = "threefold",
   pooled = "jann",
