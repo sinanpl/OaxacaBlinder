@@ -1,6 +1,4 @@
-
-
-parse_formula <- function(formula) {
+parse_formula <- function(data, formula) {
   # convert to character and split in depvar, indepvar and groupvar
   fml_str <- as.character(formula)
   lhs <- fml_str[2]
@@ -11,42 +9,35 @@ parse_formula <- function(formula) {
   group_var <- rhs[2]
   rhs <- rhs[1]
 
+  # save reference level
+  ref_level = levels(data[[group_var]])[2]
+
   # returns list of character strings
-  list(dep_var = lhs,
-       indep_var = rhs,
-       group_var = group_var)
+  list(
+    dep_var = lhs,
+    indep_var = rhs,
+    group_var = group_var,
+    ref_level = ref_level
+  )
 }
 
-modify_group_var_to_dummy = function(data, formula) {
-  # parse fml for group/dep var
-  fml_comp = parse_formula(formula)
-  group_var = fml_comp$group_var
+validate_columns = function(data, formula) {
+  fml_comp <- parse_formula(data, formula)
   dep_var = fml_comp$dep_var
+  indep_var = fml_comp$indep_var
+  group_var = fml_comp$group_var
 
-  stopifnot("Grouping variable should have 2 unique values" = {
-    g = data[[group_var]]
-    length(unique(g)) == 2
-  })
-
-  # modify group var such that group0 (reference) is the group that has a higher dep_var avg
-  dep_var_avgs = aggregate(data[[dep_var]], list(gr = data[[group_var]]), FUN =
-                             mean, na.rm = TRUE)
-  dep_var_avgs = dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE),]
-
-  group1 = dep_var_avgs$gr[1] # higher dep_var avg
-  group2 = dep_var_avgs$gr[2] # lower dep_var avg
-
-  # modify data; 0 represent the reference (higher depvar group)
-  data[[group_var]] = ifelse(data[[group_var]] == group1, 0, 1)
-
-  # return with levels specification for metainfo
-  list(data = data,
-       group_levels = c(group1, group2))
-
+  # stop if data / variable are not right format
+  stopifnot(
+    "`data` should be a data.frame" = inherits(data, "data.frame"),
+    "dependent variable should be a numeric" = inherits(data[[dep_var]], "numeric"),
+    "grouping variable should be a factor with 2 levels" = inherits(data[[group_var]], "factor") &&
+      length(levels(data[[group_var]])) == 2
+  )
 }
 
 calculate_gap <- function(formula, data_a, data_b) {
-  fml_comp <- parse_formula(formula)
+  fml_comp <- parse_formula(data_a, formula)
 
   EY_a <- mean(data_a[[fml_comp$dep_var]], na.rm = TRUE)
   EY_b <- mean(data_b[[fml_comp$dep_var]], na.rm = TRUE)
@@ -64,10 +55,12 @@ calculate_gap <- function(formula, data_a, data_b) {
 
 fit_models <- function(formula, data) {
   # get formula components
-  fml_comp <- parse_formula(formula)
+  fml_comp <- parse_formula(data, formula)
 
-  # filter datasets for group a/b
-  idx <- data[[fml_comp$group_var]] == 0
+  # update contrast for model fit (jann2008, including groupvar)
+  contrasts(data[[fml_comp$group_var]])  = contr.SAS(levels(data[[fml_comp$group_var]]))
+
+  idx <- data[[fml_comp$group_var]] == fml_comp$ref_level
   data_a <- data[idx,]
   data_b <- data[!idx,]
 
@@ -272,7 +265,7 @@ get_bootstrap_ci = function(formula,
         c(
           se = sd(estimates, na.rm = TRUE),
           quantile(estimates, probs = conf_probs)
-        )    
+        )
     }) |> setNames(varlevel_coef_names)
   }) |>
     setNames(coef_types) |>
@@ -297,7 +290,7 @@ get_bootstrap_ci = function(formula,
 #'
 #' @param formula A formula specifying the model as: \code{dependent_var ~
 #'   x_var1 + x_var1 + ... + x_varK | group_var}.
-#' @param data A data frame.
+#' @param data A data frame. See details section for more information
 #' @param type Type of decomposition to run: either "twofold" (the default) or
 #'   "threefold".
 #' @param pooled \code{neumark} (the default) to exclude the group variable from
@@ -311,9 +304,24 @@ get_bootstrap_ci = function(formula,
 #' @return A list with elements \code{overall}, \code{varlevel}, \code{gaps},
 #'   \code{meta}, and \code{bootstraps}, which can be queried with
 #'   \code{summary()} and \code{coef()}.
-#' @export
+#' @details
+#' \subsection{Reference level of grouping variable}{
+#'  In this package, the main function requires the grouping variable
+#'  in the data to be a factor with 2 levels. The statistical method
+#'  will calculate the gaps based on the 1st level of the factor.
 #'
+#'  Also, in case the pooled model should contain the grouping
+#'  variable, the first factor level is the level that is encoded to a dummy.
+#'
+#'  To alter this behavior and change the reference level, the factor levels
+#'  should be reversed. This can be done with an adaptation of code below.
+#'  \preformatted{
+#'  data$group_var = relevel(data$group_var, ref = levels(data$graup_var)[2])
+#'  }
+#' }
+#' @export
 #' @examples
+#' library(OaxacaBlinder)
 #' twofold = OaxacaBlinderDecomp(
 #'   formula = real_wage ~ age + education | female,
 #'   data = chicago_long,
@@ -341,14 +349,12 @@ OaxacaBlinderDecomp <-
            baseline_invariant = FALSE,
            n_bootstraps = NULL,
            conf_probs = c(.025, .975)) {
+    validate_columns(data, formula)
+
     dataset_name = deparse(substitute(data))
-    input_data = data
-    gvar_to_num = modify_group_var_to_dummy(input_data, formula)
-    data = gvar_to_num$data
     fitted_models <- fit_models(formula, data)
     results <-
       calculate_coefs(fitted_models, type, pooled, baseline_invariant)
-
 
     # collect descriptives
     results$gaps <- calculate_gap(
@@ -358,13 +364,12 @@ OaxacaBlinderDecomp <-
     )
     results$meta <- list(
       type = type,
-      group_levels = gvar_to_num$group_levels,
       formula = deparse(formula),
-      formula_components = parse_formula(formula),
+      formula_components = parse_formula(data, formula),
       dataset_name = dataset_name,
-      data = input_data
+      data = data,
+      fitted_models = fitted_models
     )
-
 
     if (!is.null(n_bootstraps)) {
       bootstrap_results = get_bootstrap_ci(

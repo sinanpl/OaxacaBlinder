@@ -18,7 +18,7 @@ OaxacaBlinderDecomp(
 \item{formula}{A formula specifying the model as: \code{dependent_var ~
 x_var1 + x_var1 + ... + x_varK | group_var}.}
 
-\item{data}{A data frame.}
+\item{data}{A data frame. See details section for more information}
 
 \item{type}{Type of decomposition to run: either "twofold" (the default) or
 "threefold".}
@@ -42,7 +42,22 @@ A list with elements \code{overall}, \code{varlevel}, \code{gaps},
 \description{
 Run a Blinder-Oaxaca decomposition
 }
+\details{
+\subsection{Reference level of grouping variable}{
+ In this package, the main function requires the grouping variable
+ in the data to be a factor with 2 levels. The statistical method
+ will calculate the gaps based on the 1st level of the factor.
+ Also, in case the pooled model should contain the grouping
+ variable, the first factor level is the level that is encoded to a dummy.
+ To alter this behavior and change the reference level, the factor levels
+ should be reversed. This can be done like this.
+ \preformatted{
+ data$group_var = relevel(data$group_var, ref = levels(data$graup_var)[2])
+ }
+}
+}
 \examples{
+library(OaxacaBlinder)
 twofold = OaxacaBlinderDecomp(
   formula = real_wage ~ age + education | female,
   data = chicago_long,
