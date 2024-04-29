@@ -56,6 +56,7 @@ dplyr::glimpse(chicago_long)
   - `jann`: The parameters of a model **including** the group variable
 
 ```{r}
+set.seed(1973)
 twofold <- OaxacaBlinderDecomp(
   formula = real_wage ~ age + education | female,
   data = chicago_long,
