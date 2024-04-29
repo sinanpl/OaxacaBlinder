@@ -84,8 +84,7 @@ coef(twofold, ci = TRUE)
 ```{r}
 threefold <- OaxacaBlinderDecomp(
   real_wage ~ age + education | female, chicago_long,
-  type = "twofold",
-  pooled = "jann",
+  type = "threefold",
   baseline_invariant = TRUE
 )
 summary(threefold)
