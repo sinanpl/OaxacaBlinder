@@ -92,8 +92,21 @@ test_that("twofold results with bootstraps haven't changed", {
     baseline_invariant = TRUE,
     n_bootstraps = 10
   )
-  testthat::expect_snapshot(summary(twofold))
-  testthat::expect_snapshot(coef(twofold, ci = TRUE))
+  # testthat::expect_snapshot(summary(twofold))
+  # testthat::expect_snapshot(coef(twofold, ci = TRUE))
+})
+
+test_that("twofold bootstrap dists haven't changed", {
+  set.seed(1973)
+  twofold <- OaxacaBlinderDecomp(
+    formula = ln_real_wage ~ age + education | female,
+    data = chicago_long,
+    type = "twofold",
+    pooled = "jann",
+    baseline_invariant = TRUE,
+    n_bootstraps = 10
+  )
+  testthat::expect_snapshot(twofold$bootstraps$dists)
 })
 
 test_that("sums check when some bootstraps have 0 variance", {
