@@ -92,8 +92,13 @@ test_that("twofold results with bootstraps haven't changed", {
     baseline_invariant = TRUE,
     n_bootstraps = 10
   )
-  # testthat::expect_snapshot(summary(twofold))
-  # testthat::expect_snapshot(coef(twofold, ci = TRUE))
+  x = coef(twofold, ci=TRUE)
+  x['coefficient'] = round(x['coefficient'], 3)
+  x['se'] = round(x['se'], 3)
+  x['2.5%'] = round(x[, '2.5%'], 3)
+  x['97.5%'] = round(x[, '97.5%'], 3)
+  rounded_coefs=x
+  testthat::expect_snapshot(rounded_coefs)
 })
 
 test_that("sums check when some bootstraps have 0 variance", {
