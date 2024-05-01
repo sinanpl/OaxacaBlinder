@@ -152,34 +152,36 @@ parse_formula <- function(formula) {
   )
 }
 
-modify_group_var_to_dummy <- function(data, formula, viewpoint_group) {
+choose_viewpoint_group <- function(data, formula, viewpoint_group) {
   # parse fml for group/dep var
   fml_comp <- parse_formula(formula)
   group_var <- fml_comp$group_var
-  dep_var <- fml_comp$dep_var
 
-  stopifnot("Grouping variable should have 2 unique values" = {
-    g <- data[[group_var]]
-    length(unique(g)) == 2
+    stopifnot("Grouping variable should have 2 unique values" = {
+    length(unique(data[[group_var]])) == 2
   })
 
-  # modify group var such that group0 (reference) is the group that has a higher dep_var avg
-  dep_var_avgs <- aggregate(data[[dep_var]], list(gr = data[[group_var]]),
-    FUN =
-      mean, na.rm = TRUE
-  )
-  dep_var_avgs <- dep_var_avgs[order(dep_var_avgs$x, decreasing = as.logical(viewpoint_group)), ]
+  # Defaults
+  if (inherits(data[[group_var]], "factor")) {
+    gp_vals <- levels(data[[group_var]])
+    group_b_val <- levels(data[[group_var]])[2]
+    group_a_val <- levels(data[[group_var]])[1]
+  } else {
+    gp_vals <- unique(data[[group_var]])
+    group_b_val <- gp_vals[order(gp_vals)][2]
+    group_a_val <- gp_vals[order(gp_vals)][1]
+  }
 
-  group1 <- dep_var_avgs$gr[1] # higher dep_var avg
-  group2 <- dep_var_avgs$gr[2] # lower dep_var avg
-
-  # modify data; 0 represent the reference (higher depvar group)
-  data[[group_var]] <- ifelse(data[[group_var]] == group1, 0, 1)
+  # Override default groups if viewpoint group is specified
+  if (!is.null(viewpoint_group)) {
+    group_b_val <- viewpoint_group
+    group_a_val <- gp_vals[gp_vals != viewpoint_group]
+  }
 
   # return with levels specification for metainfo
   list(
-    data = data,
-    group_levels = c(group1, group2)
+    group_a_val = group_a_val,
+    group_b_val = group_b_val
   )
 }
 
@@ -212,7 +214,7 @@ assemble_model <- function(formula, data) {
   list(y = y, modmat = modmat, terms = terms, fit = fit)
 }
 
-fit_models <- function(formula, data) {
+fit_models <- function(formula, data, group_b_val) {
   # get formula components
   fml_comp <- parse_formula(formula)
 
@@ -225,9 +227,9 @@ fit_models <- function(formula, data) {
     data.frame()
 
   # filter datasets for group a/b
-  idx <- data[[fml_comp$group_var]] == 0
-  data_a <- data[idx, ]
-  data_b <- data[!idx, ]
+  idx <- data[[fml_comp$group_var]] == group_b_val
+  data_b <- data[idx, ]
+  data_a <- data[!idx, ]
 
   # construct formulas
   fml_reg <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
@@ -487,6 +489,7 @@ get_bootstraps <- function(formula,
                            type,
                            pooled,
                            baseline_invariant,
+                           group_b_val,
                            conf_probs = conf_probs) {
   # Run the bootstraps
   runs_all <- replicate(
@@ -504,7 +507,8 @@ get_bootstraps <- function(formula,
         sample_data,
         type,
         pooled,
-        baseline_invariant
+        baseline_invariant,
+        group_b_val
       )
       decomp$results
     }
@@ -615,8 +619,9 @@ calc_decomp <- function(formula,
                         data,
                         type,
                         pooled,
-                        baseline_invariant) {
-  fitted_models <- fit_models(formula, data)
+                        baseline_invariant,
+                        group_b_val) {
+  fitted_models <- fit_models(formula, data, group_b_val)
   results <-
     calculate_coefs(fitted_models, type, pooled, baseline_invariant)
   results$gaps <- calculate_gap(
@@ -678,25 +683,25 @@ OaxacaBlinderDecomp <-
            type = "twofold",
            pooled = "neumark",
            baseline_invariant = FALSE,
-           viewpoint_group = 1,
+           viewpoint_group = NULL,
            n_bootstraps = NULL,
            conf_probs = c(.025, .975)) {
     dataset_name <- deparse(substitute(data))
     input_data <- data
-    gvar_to_num <- modify_group_var_to_dummy(input_data, formula, viewpoint_group)
-    data <- gvar_to_num$data
+    group_vals <- choose_viewpoint_group(input_data, formula, viewpoint_group)
 
     decomp <- calc_decomp(
       formula,
       data,
       type,
       pooled,
-      baseline_invariant
+      baseline_invariant,
+      group_b_val = group_vals$group_b_val
     )
 
     decomp$results$meta <- list(
       type = type,
-      group_levels = gvar_to_num$group_levels,
+      group_levels = c(group_vals$group_a_val, group_vals$group_b_val),
       formula = deparse(formula),
       formula_components = parse_formula(formula),
       dataset_name = dataset_name,
@@ -728,6 +733,7 @@ OaxacaBlinderDecomp <-
         type = type,
         pooled = pooled,
         baseline_invariant = baseline_invariant,
+        group_b_val = group_vals$group_b_val,
         conf_probs = conf_probs
       )
       decomp$results$bootstraps <- bootstrap_results
