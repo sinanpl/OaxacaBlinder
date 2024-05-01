@@ -539,7 +539,6 @@ test_that("threefold results with flipped viewpoint match Stata", {
   baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
   baseline_rowname <- gsub("\\.", "_", baseline_cat)
 
-  # Not flipped yet, should fail
   obd <-
     OaxacaBlinderDecomp(
       ln_real_wage ~ age + education | female,
@@ -575,7 +574,6 @@ test_that("Jann twofold results with flipped viewpoint match Stata", {
   baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
   baseline_rowname <- gsub("\\.", "_", baseline_cat)
 
-  # Not flipped yet, should fail
   obd <-
     OaxacaBlinderDecomp(
       ln_real_wage ~ age + education | female,

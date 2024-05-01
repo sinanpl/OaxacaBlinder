@@ -168,7 +168,7 @@ modify_group_var_to_dummy <- function(data, formula) {
     FUN =
       mean, na.rm = TRUE
   )
-  dep_var_avgs <- dep_var_avgs[order(dep_var_avgs$x, decreasing = TRUE), ]
+  dep_var_avgs <- dep_var_avgs[order(dep_var_avgs$x, decreasing = FALSE), ]
 
   group1 <- dep_var_avgs$gr[1] # higher dep_var avg
   group2 <- dep_var_avgs$gr[2] # lower dep_var avg
