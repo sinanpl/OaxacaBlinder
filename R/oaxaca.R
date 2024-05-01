@@ -152,7 +152,7 @@ parse_formula <- function(formula) {
   )
 }
 
-modify_group_var_to_dummy <- function(data, formula) {
+modify_group_var_to_dummy <- function(data, formula, viewpoint_group) {
   # parse fml for group/dep var
   fml_comp <- parse_formula(formula)
   group_var <- fml_comp$group_var
@@ -168,7 +168,7 @@ modify_group_var_to_dummy <- function(data, formula) {
     FUN =
       mean, na.rm = TRUE
   )
-  dep_var_avgs <- dep_var_avgs[order(dep_var_avgs$x, decreasing = FALSE), ]
+  dep_var_avgs <- dep_var_avgs[order(dep_var_avgs$x, decreasing = as.logical(viewpoint_group)), ]
 
   group1 <- dep_var_avgs$gr[1] # higher dep_var avg
   group2 <- dep_var_avgs$gr[2] # lower dep_var avg
@@ -640,6 +640,9 @@ calc_decomp <- function(formula,
 #'   the model, or \code{jann} to include the group variable.
 #' @param baseline_invariant Correct for the omitted baseline bias for all
 #'   factor variables?
+#' @param viewpoint_group Value of group variable from whose viewpoint to
+#'   calculate decomposition. \code{NULL}, the default, auto-selects the higher
+#'   value or second factor level.
 #' @param n_bootstraps Bootstrap repetitions to use when calculating standard
 #'   errors.
 #' @param conf_probs CI boundaries for bootstrapped standard errors.
@@ -675,11 +678,12 @@ OaxacaBlinderDecomp <-
            type = "twofold",
            pooled = "neumark",
            baseline_invariant = FALSE,
+           viewpoint_group = 1,
            n_bootstraps = NULL,
            conf_probs = c(.025, .975)) {
     dataset_name <- deparse(substitute(data))
     input_data <- data
-    gvar_to_num <- modify_group_var_to_dummy(input_data, formula)
+    gvar_to_num <- modify_group_var_to_dummy(input_data, formula, viewpoint_group)
     data <- gvar_to_num$data
 
     decomp <- calc_decomp(

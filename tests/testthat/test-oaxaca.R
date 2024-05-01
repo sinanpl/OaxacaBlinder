@@ -544,6 +544,7 @@ test_that("threefold results with flipped viewpoint match Stata", {
       ln_real_wage ~ age + education | female,
       chicago_long_mod,
       baseline_invariant = TRUE,
+      viewpoint_group = 0,
       type = "threefold"
     )
   # Match and sort rownames
@@ -579,6 +580,7 @@ test_that("Jann twofold results with flipped viewpoint match Stata", {
       ln_real_wage ~ age + education | female,
       chicago_long_mod,
       baseline_invariant = TRUE,
+      viewpoint_group = 0,
       type = "twofold",
       pooled = "jann"
     )
