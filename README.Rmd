@@ -34,7 +34,7 @@ You can install the development version of `OaxacaBlinder` like so:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("SinanPolatoglu/OaxacaBlinder")
+remotes::install_github("sinanpl/OaxacaBlinder")
 ```
 
 ## Example
@@ -67,7 +67,7 @@ twofold <- OaxacaBlinderDecomp(
 summary(twofold)
 ```
 
-In addition, coefficients can be extracted vor the variable-level estimates
+In addition, coefficients can be extracted for the variable-level estimates
 
 ```{r}
 coef(twofold)
@@ -90,3 +90,12 @@ threefold <- OaxacaBlinderDecomp(
 summary(threefold)
 coef(threefold)
 ```
+
+## Contributing
+
+Any contribution is appreciated. In case you notice any typos or 
+opportunities for improvement, please open an issue or pull request.
+
+For developers: this project is set up for using pre-commit.
+Find out more [here](https://lorenzwalthert.github.io/precommit/) and 
+[get started](https://lorenzwalthert.github.io/precommit/articles/precommit.html).
