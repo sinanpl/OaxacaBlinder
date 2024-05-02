@@ -157,7 +157,7 @@ choose_viewpoint_group <- function(data, formula, viewpoint_group) {
   fml_comp <- parse_formula(formula)
   group_var <- fml_comp$group_var
 
-    stopifnot("Grouping variable should have 2 unique values" = {
+  stopifnot("Grouping variable should have 2 unique values" = {
     length(unique(data[[group_var]])) == 2
   })
 
