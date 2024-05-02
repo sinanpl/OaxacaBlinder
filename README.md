@@ -23,7 +23,7 @@ You can install the development version of `OaxacaBlinder` like so:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("SinanPolatoglu/OaxacaBlinder")
+remotes::install_github("sinanpl/OaxacaBlinder")
 ```
 
 ## Example
@@ -87,7 +87,7 @@ summary(twofold)
 #> unexplained_b        2.48      64.6% 0.3537071  1.859117 3.2261392
 ```
 
-In addition, coefficients can be extracted vor the variable-level
+In addition, coefficients can be extracted for the variable-level
 estimates
 
 ``` r
@@ -202,3 +202,12 @@ coef(threefold)
 #> educationsome.college  0.124886299  -0.45496110  0.1083240704
 #> (Intercept)            0.000000000   5.00836516  0.0000000000
 ```
+
+## Contributing
+
+Any contribution is appreciated. In case you notice any typos or
+opportunities for improvement, please open an issue or pull request.
+
+For developers: this project is set up for using pre-commit. Find out
+more [here](https://lorenzwalthert.github.io/precommit/) and [get
+started](https://lorenzwalthert.github.io/precommit/articles/precommit.html).
