@@ -556,10 +556,10 @@ test_that("EXs are correct", {
     model.matrix(ln_real_wage ~ age + education + 0, data_a)
   modmat_b <-
     model.matrix(ln_real_wage ~ age + education + 0, data_b)
-  EX_a <- colMeans(modmat_a)
-  EX_b <- colMeans(modmat_b)
+  EX_a_manual <- c(colMeans(modmat_a), `(Intercept)` = 1)
+  EX_b_manual <- c(colMeans(modmat_b), `(Intercept)` = 1)
 
   # Compare
-  testthat::expect_equal(threefold$varlevel$EX_a, EX_a)
-  testthat::expect_equal(threefold$varlevel$EX_b, EX_b)
+  testthat::expect_equal(threefold$varlevel$EX_a, EX_a_manual)
+  testthat::expect_equal(threefold$varlevel$EX_b, EX_b_manual)
 })
