@@ -591,7 +591,7 @@ test_that("threefold results with flipped factor viewpoint match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
@@ -628,7 +628,7 @@ test_that("threefold results with auto-flipped factor viewpoint match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
