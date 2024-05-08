@@ -564,7 +564,15 @@ test_that("EXs are correct", {
   EX_a_manual <- c(colMeans(modmat_a), `(Intercept)` = 1)
   EX_b_manual <- c(colMeans(modmat_b), `(Intercept)` = 1)
 
-  # Compare
-  testthat::expect_equal(threefold$varlevel$EX_a, EX_a_manual)
-  testthat::expect_equal(threefold$varlevel$EX_b, EX_b_manual)
+  EX_a_auto <- threefold$varlevel$EX_a |> setNames(rownames(threefold$varlevel))
+  EX_b_auto <- threefold$varlevel$EX_b |> setNames(rownames(threefold$varlevel))
+
+  # Use numeric sort order
+  EX_a_manual <- EX_a_manual[order(EX_a_manual)]
+  EX_b_manual <- EX_b_manual[order(EX_b_manual)]
+  EX_a_auto <- EX_a_auto[order(EX_a_auto)]
+  EX_b_auto <- EX_b_auto[order(EX_b_auto)]
+
+  testthat::expect_equal(EX_a_auto, EX_a_manual)
+  testthat::expect_equal(EX_b_auto, EX_b_manual)
 })
