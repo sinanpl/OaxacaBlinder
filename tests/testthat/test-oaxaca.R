@@ -11,7 +11,7 @@ test_that("baseline-adjusted-IV threefold results match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
@@ -159,6 +159,7 @@ testthat::test_that("threefold matches other calcs", {
       data = chicago,
       type = "threefold"
     )
+  obd3$varlevel <- obd3$varlevel[c("endowments", "coefficients", "interaction")]
   obd_3f_terms <-
     obd3$varlevel[order(obd3$varlevel[, 1]), ]
 
@@ -183,7 +184,7 @@ testthat::test_that("threefold matches other calcs", {
 
   # Confirm function results match ----
   testthat::expect_equal(
-    obd_3f_terms,
+    obd_3f_terms[c("endowments", "coefficients", "interaction")],
     oax_3f_terms
   )
 })
@@ -237,7 +238,7 @@ testthat::test_that("neumark twofold matches manual calcs", {
     obd2$varlevel[order(obd2$varlevel[, 1]), ]
 
   testthat::expect_equal(
-    obd_2f_terms,
+    obd_2f_terms[c("explained", "unexplained", "unexplained_a", "unexplained_b")],
     manual_2f_terms
   )
 })
@@ -421,7 +422,7 @@ test_that("0-variance dummy IV results match Stata", {
   stata_obd_ests <- stata_obd[order(rownames(stata_obd)), ]
 
   testthat::expect_equal(
-    obd_ests,
+    obd_ests[c("endowments", "coefficients", "interaction")],
     stata_obd_ests
   )
 })
@@ -440,7 +441,7 @@ test_that("0-variance categorical IV results match Stata", {
       data = chicago_long_mod,
       type = "threefold"
     )
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("\\.", "_", rownames(obd_ests))
   obd_ests <- obd_ests[order(rownames(obd_ests)), ]
@@ -471,7 +472,7 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
