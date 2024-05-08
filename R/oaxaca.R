@@ -577,7 +577,7 @@ get_bootstraps <- function(formula,
     varlevel =
       list(
         runs = varlevel_list,
-        term_types = coef_types,
+        term_types = c(coef_types, "EX_a", "EX_b"),
         coef_names = varlevel_coef_names
       )
   )
