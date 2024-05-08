@@ -456,6 +456,14 @@ extract_bootstrap_estimates <- function(runs,
   bs_estimates
 }
 
+calculate_pval <- function(data, null_val) {
+  # Adapted from https://stats.stackexchange.com/a/83038
+  p1 <- sum(data > null_val) / length(data)
+  p2 <- sum(data < null_val) / length(data)
+  p <- min(p1, p2) * 2
+  p
+}
+
 summarize_bootstraps <- function(bs_estimates, conf_probs) {
   # term_type, term, summary type in columns; 1 df per term_type
   bs_summaries_list <-
@@ -464,9 +472,11 @@ summarize_bootstraps <- function(bs_estimates, conf_probs) {
       function(term_type) {
         se <- lapply(bs_estimates[[term_type]], sd, na.rm = TRUE)
         ci <- lapply(bs_estimates[[term_type]], quantile, conf_probs)
+        pval <- lapply(bs_estimates[[term_type]], calculate_pval, 0)
         summ <- data.frame(
           se = do.call(rbind, se),
           do.call(rbind, ci),
+          pval = do.call(rbind, pval),
           check.names = FALSE
         )
         summ <-
