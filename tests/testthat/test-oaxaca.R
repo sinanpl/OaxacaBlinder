@@ -553,7 +553,7 @@ test_that("threefold results with flipped non-factor viewpoint match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
@@ -665,7 +665,8 @@ test_that("Jann twofold results with flipped non-factor viewpoint match Stata", 
       pooled = "jann"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <-
+    obd$varlevel[c("explained", "unexplained", "unexplained_a", "unexplained_b")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
