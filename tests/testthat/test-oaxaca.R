@@ -538,3 +538,28 @@ test_that("bootstrapped gaps haven't changed", {
   )
   testthat::expect_snapshot(obd$bootstraps$gaps)
 })
+
+test_that("EXs are correct", {
+  set.seed(1973)
+  threefold <- OaxacaBlinderDecomp(
+    formula = ln_real_wage ~ age + education | female,
+    data = chicago_long,
+    type = "threefold",
+    baseline_invariant = TRUE,
+    n_bootstraps = 10
+  )
+
+  # Calc EXs manually
+  data_a <- chicago_long[chicago_long$female == 0, ]
+  data_b <- chicago_long[chicago_long$female == 1, ]
+  modmat_a <-
+    model.matrix(ln_real_wage ~ age + education + 0, data_a)
+  modmat_b <-
+    model.matrix(ln_real_wage ~ age + education + 0, data_b)
+  EX_a <- colMeans(modmat_a)
+  EX_b <- colMeans(modmat_b)
+
+  # Compare
+  testthat::expect_equal(threefold$varlevel$EX_a, EX_a)
+  testthat::expect_equal(threefold$varlevel$EX_b, EX_b)
+})
