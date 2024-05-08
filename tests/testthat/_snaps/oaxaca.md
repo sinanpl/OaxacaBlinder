@@ -71,6 +71,84 @@
       20 -0.0017353171  0.0012638658
       21 -0.0091418736  0.0029662950
 
+---
+
+    Code
+      threefold$bootstraps$varlevel
+    Output
+            coef_type                     term          se          2.5%
+      1    endowments              (Intercept) 0.000000000  0.0000000000
+      2    endowments                      age 0.014523549 -0.0061312589
+      3    endowments       education.baseline 0.012120247 -0.0533409527
+      4    endowments educationadvanced.degree 0.006161455 -0.0234066642
+      5    endowments         educationcollege 0.004047663 -0.0085444075
+      6    endowments     educationhigh.school 0.007409398 -0.0168213031
+      7    endowments    educationsome.college 0.006337580  0.0009117397
+      8  coefficients              (Intercept) 0.111913536  0.1676892982
+      9  coefficients                      age 0.096589828 -0.2080100134
+      10 coefficients       education.baseline 0.014770123 -0.0462741625
+      11 coefficients educationadvanced.degree 0.011817640 -0.0045993505
+      12 coefficients         educationcollege 0.009154471 -0.0180129791
+      13 coefficients     educationhigh.school 0.016764225 -0.0203106051
+      14 coefficients    educationsome.college 0.019198315 -0.0240752159
+      15  interaction              (Intercept) 0.000000000  0.0000000000
+      16  interaction                      age 0.005006486 -0.0134980866
+      17  interaction       education.baseline 0.005515694 -0.0165542883
+      18  interaction educationadvanced.degree 0.005522065 -0.0132856154
+      19  interaction         educationcollege 0.001701718 -0.0013819543
+      20  interaction     educationhigh.school 0.001020211 -0.0017353171
+      21  interaction    educationsome.college 0.004272839 -0.0091418736
+      22         EX_a              (Intercept) 0.000000000  1.0000000000
+      23         EX_a                      age 0.644068351 37.2125350140
+      24         EX_a       education.baseline 0.016314050  0.2793899309
+      25         EX_a educationadvanced.degree 0.010298952  0.0271738045
+      26         EX_a         educationcollege 0.014966614  0.0763477089
+      27         EX_a     educationhigh.school 0.022631314  0.3036881419
+      28         EX_a    educationsome.college 0.023388988  0.1998193065
+      29         EX_b              (Intercept) 0.000000000  1.0000000000
+      30         EX_b                      age 1.133885969 35.4397671477
+      31         EX_b       education.baseline 0.021824193  0.1790900196
+      32         EX_b educationadvanced.degree 0.010707620  0.0477648175
+      33         EX_b         educationcollege 0.013093745  0.0825640586
+      34         EX_b     educationhigh.school 0.025519737  0.2877195670
+      35         EX_b    educationsome.college 0.023272278  0.2532860825
+                 97.5%
+      1   0.0000000000
+      2   0.0356309584
+      3  -0.0172267929
+      4  -0.0077666026
+      5   0.0029986197
+      6   0.0062207001
+      7   0.0177683331
+      8   0.5076361160
+      9   0.0918145056
+      10  0.0006824008
+      11  0.0303170117
+      12  0.0056651748
+      13  0.0300759086
+      14  0.0287183945
+      15  0.0000000000
+      16  0.0004285314
+      17  0.0003562039
+      18  0.0021842629
+      19  0.0033242113
+      20  0.0012638658
+      21  0.0029662950
+      22  1.0000000000
+      23 39.0582699549
+      24  0.3295000609
+      25  0.0575510656
+      26  0.1209579058
+      27  0.3652974095
+      28  0.2626410103
+      29  1.0000000000
+      30 38.2276155462
+      31  0.2476527031
+      32  0.0796758663
+      33  0.1180109127
+      34  0.3594877820
+      35  0.3292237443
+
 # twofold results with bootstraps haven't changed
 
     Code
