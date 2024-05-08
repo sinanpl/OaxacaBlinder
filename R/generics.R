@@ -50,7 +50,7 @@ summary.OaxacaBlinderDecomp <- function(x) {
 }
 #' @export
 coef.OaxacaBlinderDecomp <- function(x, ci = FALSE) {
-  estimates <- x$varlevel[!(names(x$varlevel) %in% c("EX_a", "EX_b"))]
+  estimates <- x$varlevel[!(names(x$varlevel) %in% c("EX_a", "EX_b", "EX_gap"))]
 
   if (ci && !is.null(x$bootstraps)) {
     # reshape estimates from wide to long
