@@ -540,6 +540,11 @@ test_that("bootstrapped gaps haven't changed", {
 })
 
 test_that("EXs are correct", {
+  # Hack to make baseline names the same
+  chicago_long$education[chicago_long$education == "LTHS"] <- ".baseline"
+  chicago_long$education <-
+    as.factor(chicago_long$education) |>
+    relevel(ref = ".baseline") # force baseline in spite of sort order
   set.seed(1973)
   threefold <- OaxacaBlinderDecomp(
     formula = ln_real_wage ~ age + education | female,
