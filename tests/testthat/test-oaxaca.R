@@ -80,6 +80,7 @@ test_that("threefold results with bootstraps haven't changed", {
   )
   testthat::expect_snapshot(summary(threefold))
   testthat::expect_snapshot(coef(threefold, ci = TRUE))
+  testthat::expect_snapshot(threefold$bootstraps$varlevel)
 })
 
 test_that("twofold results with bootstraps haven't changed", {
