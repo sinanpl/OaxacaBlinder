@@ -112,6 +112,13 @@
       33         EX_b         educationcollege 0.013093745  0.0825640586
       34         EX_b     educationhigh.school 0.025519737  0.2877195670
       35         EX_b    educationsome.college 0.023272278  0.2532860825
+      36       EX_gap              (Intercept) 0.000000000  0.0000000000
+      37       EX_gap                      age 1.379124804 -0.8146718149
+      38       EX_gap       education.baseline 0.025290653  0.0509985183
+      39       EX_gap educationadvanced.degree 0.011794146 -0.0461356193
+      40       EX_gap         educationcollege 0.020216486 -0.0322391519
+      41       EX_gap     educationhigh.school 0.030798590 -0.0265618373
+      42       EX_gap    educationsome.college 0.037302356 -0.1159752373
                  97.5%
       1   0.0000000000
       2   0.0356309584
@@ -148,6 +155,13 @@
       33  0.1180109127
       34  0.3594877820
       35  0.3292237443
+      36  0.0000000000
+      37  3.4236867540
+      38  0.1249498279
+      39 -0.0137701202
+      40  0.0251657383
+      41  0.0697031773
+      42 -0.0117141614
 
 # twofold results with bootstraps haven't changed
 
