@@ -11,7 +11,7 @@ test_that("baseline-adjusted-IV threefold results match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
@@ -80,6 +80,7 @@ test_that("threefold results with bootstraps haven't changed", {
   )
   testthat::expect_snapshot(summary(threefold))
   testthat::expect_snapshot(coef(threefold, ci = TRUE))
+  testthat::expect_snapshot(threefold$bootstraps$varlevel)
 })
 
 test_that("twofold results with bootstraps haven't changed", {
@@ -159,6 +160,7 @@ testthat::test_that("threefold matches other calcs", {
       data = chicago,
       type = "threefold"
     )
+  obd3$varlevel <- obd3$varlevel[c("endowments", "coefficients", "interaction")]
   obd_3f_terms <-
     obd3$varlevel[order(obd3$varlevel[, 1]), ]
 
@@ -183,7 +185,7 @@ testthat::test_that("threefold matches other calcs", {
 
   # Confirm function results match ----
   testthat::expect_equal(
-    obd_3f_terms,
+    obd_3f_terms[c("endowments", "coefficients", "interaction")],
     oax_3f_terms
   )
 })
@@ -237,7 +239,7 @@ testthat::test_that("neumark twofold matches manual calcs", {
     obd2$varlevel[order(obd2$varlevel[, 1]), ]
 
   testthat::expect_equal(
-    obd_2f_terms,
+    obd_2f_terms[c("explained", "unexplained", "unexplained_a", "unexplained_b")],
     manual_2f_terms
   )
 })
@@ -421,7 +423,7 @@ test_that("0-variance dummy IV results match Stata", {
   stata_obd_ests <- stata_obd[order(rownames(stata_obd)), ]
 
   testthat::expect_equal(
-    obd_ests,
+    obd_ests[c("endowments", "coefficients", "interaction")],
     stata_obd_ests
   )
 })
@@ -440,7 +442,7 @@ test_that("0-variance categorical IV results match Stata", {
       data = chicago_long_mod,
       type = "threefold"
     )
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("\\.", "_", rownames(obd_ests))
   obd_ests <- obd_ests[order(rownames(obd_ests)), ]
@@ -471,7 +473,7 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
       type = "threefold"
     )
   # Match and sort rownames
-  obd_ests <- obd$varlevel
+  obd_ests <- obd$varlevel[c("endowments", "coefficients", "interaction")]
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
     gsub(".baseline", baseline_rowname, rownames(obd_ests))
@@ -537,4 +539,42 @@ test_that("bootstrapped gaps haven't changed", {
     n_bootstraps = 10
   )
   testthat::expect_snapshot(obd$bootstraps$gaps)
+})
+
+test_that("EXs are correct", {
+  # Hack to make baseline names the same
+  chicago_long$education[chicago_long$education == "LTHS"] <- ".baseline"
+  chicago_long$education <-
+    as.factor(chicago_long$education) |>
+    relevel(ref = ".baseline") # force baseline in spite of sort order
+  set.seed(1973)
+  threefold <- OaxacaBlinderDecomp(
+    formula = ln_real_wage ~ age + education | female,
+    data = chicago_long,
+    type = "threefold",
+    baseline_invariant = TRUE,
+    n_bootstraps = 10
+  )
+
+  # Calc EXs manually
+  data_a <- chicago_long[chicago_long$female == 0, ]
+  data_b <- chicago_long[chicago_long$female == 1, ]
+  modmat_a <-
+    model.matrix(ln_real_wage ~ age + education + 0, data_a)
+  modmat_b <-
+    model.matrix(ln_real_wage ~ age + education + 0, data_b)
+  EX_a_manual <- c(colMeans(modmat_a), `(Intercept)` = 1)
+  EX_b_manual <- c(colMeans(modmat_b), `(Intercept)` = 1)
+
+  EX_a_auto <- threefold$varlevel$EX_a |> setNames(rownames(threefold$varlevel))
+  EX_b_auto <- threefold$varlevel$EX_b |> setNames(rownames(threefold$varlevel))
+
+  # Use numeric sort order
+  EX_a_manual <- EX_a_manual[order(EX_a_manual)]
+  EX_b_manual <- EX_b_manual[order(EX_b_manual)]
+  EX_a_auto <- EX_a_auto[order(EX_a_auto)]
+  EX_b_auto <- EX_b_auto[order(EX_b_auto)]
+
+  testthat::expect_equal(EX_a_auto, EX_a_manual)
+  testthat::expect_equal(EX_b_auto, EX_b_manual)
 })
