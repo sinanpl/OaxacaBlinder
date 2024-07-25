@@ -478,7 +478,7 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("birthplace", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("\\.", "_", rownames(obd_ests))
-  # obd_ests <- obd_ests[order(rownames(obd_ests)), ]
+  obd_ests <- obd_ests[order(rownames(obd_ests)), ]
 
   # Get the same thing from saved Stata baseline results
   stata_dir <-
