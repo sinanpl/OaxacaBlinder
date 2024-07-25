@@ -36,11 +36,16 @@ test_that("baseline-adjusted-IV threefold results match Stata", {
 test_that("baseline-adjusted-IV Jann twofold results match Stata", {
   chicago_long_mod <- chicago_long
   baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
-  baseline_rowname <- gsub("\\.", "_", baseline_cat)
+  chicago_long_mod$birthplace <-
+    factor(chicago_long_mod$foreign_born,labels = c("native", "foreign_born"))
+  ed_baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
+  bp_baseline_cat <- levels(as.factor(chicago_long_mod$birthplace))[1]
+  ed_baseline_rowname <- gsub("\\.", "_", ed_baseline_cat)
+  bp_baseline_rowname <- gsub("\\.", "_", bp_baseline_cat)
 
   obd <-
     OaxacaBlinderDecomp(
-      ln_real_wage ~ age + education | female,
+      ln_real_wage ~ age + education + birthplace | female,
       chicago_long_mod,
       baseline_invariant = TRUE,
       type = "twofold",
@@ -48,9 +53,12 @@ test_that("baseline-adjusted-IV Jann twofold results match Stata", {
     )
   # Match and sort rownames
   obd_ests <- obd$varlevel
-  rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
   rownames(obd_ests) <-
-    gsub(".baseline", baseline_rowname, rownames(obd_ests))
+    gsub("education.baseline", ed_baseline_rowname, rownames(obd_ests))
+  rownames(obd_ests) <-
+    gsub("birthplace.baseline", bp_baseline_rowname, rownames(obd_ests))
+  rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
+  rownames(obd_ests) <- gsub("birthplace", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("\\.", "_", rownames(obd_ests))
   obd_ests <- obd_ests[order(rownames(obd_ests)), ]
 
