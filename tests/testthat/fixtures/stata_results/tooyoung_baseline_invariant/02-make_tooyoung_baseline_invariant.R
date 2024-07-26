@@ -4,7 +4,8 @@ stata_dir <-
   )
 varlevel <-
   read_stata_estimates(
-    file.path(stata_dir, "tooyoung_baseline_invariant.xlsx")
+    file.path(stata_dir, "tooyoung_baseline_invariant.xlsx"),
+    "threefold"
   )
 saveRDS(
   varlevel,

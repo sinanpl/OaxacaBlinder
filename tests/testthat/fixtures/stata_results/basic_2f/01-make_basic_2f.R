@@ -1,4 +1,5 @@
 chicago_mod <- OaxacaBlinder::chicago
+chicago_mod$native <- !chicago_mod$foreign.born
 
 names(chicago_mod) <- gsub("\\.", "_", names(chicago_mod))
 
@@ -12,7 +13,8 @@ chicago_mod |> haven::write_dta(dta_path)
 command_2f <-
   paste(
     "oaxaca ln_real_wage", # Wide data only has ln_
-    "age normalize(LTHS some_college college high_school advanced_degree),",
+    "age normalize(LTHS some_college college high_school advanced_degree)",
+    "normalize(foreign_born native),",
     "by(female) pooled"
   )
 
@@ -22,4 +24,3 @@ OaxacaBlinder:::make_decomp_dofile(
   dta_file = basename(dta_path),
   est_file = "basic_2f"
 )
-#
