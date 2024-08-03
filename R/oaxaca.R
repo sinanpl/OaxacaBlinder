@@ -212,6 +212,48 @@ assemble_model <- function(formula, data) {
   list(y = y, modmat = modmat, terms = terms, fit = fit)
 }
 
+tidy_levels <- function(terms, modmat, data, fit) {
+  # levels usually stored by order only; probably best to keep tightly coupled.
+  # get variables of each column in modmat
+  vars <- attr(terms, "term.labels")
+  var_assign_i <- attr(modmat, "assign") # intercept = 0; gets removed
+  mm_col_vars <- vars[var_assign_i] # expand IV levels
+
+  # get true factor levels from data
+  factor_vars <- names(attr(modmat, "contrasts"))
+  var_levels <- lapply(data[vars], levels)
+  var_levels_fit <-
+    unlist(lapply(var_levels, function(x) if (is.null(x)) NA else x[-1L]))
+  var_levels_ref <- unlist(lapply(var_levels, function(x) x[1L])) # factors only
+
+  # get names of each estimated term (not intercept)
+  fit_terms <- names(coef(fit))[-1L]
+
+  # assemble data frame of estimated terms
+  coef_levels <- data.frame(
+    fit_term = fit_terms,
+    var = mm_col_vars,
+    level = var_levels_fit,
+    mm_col = 1 + seq_along(mm_col_vars),
+    is_reference = FALSE,
+    row.names = NULL
+  )
+
+  # assemble data frame of reference levels
+  ref_levels <- data.frame(
+    fit_term = rep.int(NA_character_, length(var_levels_ref)),
+    var = names(unlist(var_levels_ref)),
+    level = var_levels_ref,
+    mm_col = rep.int(NA_integer_, length(var_levels_ref)),
+    is_reference = TRUE,
+    row.names = NULL
+  )
+
+  levels <- rbind(coef_levels, ref_levels)
+  levels$is_factor <- levels$var %in% factor_vars
+  levels
+}
+
 fit_models <- function(formula, data) {
   # get formula components
   fml_comp <- parse_formula(formula)
