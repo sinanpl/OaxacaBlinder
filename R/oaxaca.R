@@ -199,24 +199,24 @@ calculate_gap <- function(y_a, y_b) {
 }
 
 tidy_levels <- function(terms, modmat, data) {
-  # levels stored in most places by order only; so best to keep tightly coupled?
+  # Levels stored in most places by order only; so best to keep tightly coupled?
 
-  # get variables of each column in modmat
+  # Get variables of each column in modmat
   vars <- attr(terms, "term.labels")
   var_assign_i <- attr(modmat, "assign") # intercept = 0; gets removed
   mm_col_vars <- vars[var_assign_i] # expand IV levels
 
-  # get true factor levels from data
+  # Get true factor levels from data
   factor_vars <- names(attr(modmat, "contrasts"))
   var_levels <- lapply(data[vars], levels)
   var_levels_fit <-
     unlist(lapply(var_levels, function(x) if (is.null(x)) NA else x[-1L]))
   var_levels_ref <- unlist(lapply(var_levels, function(x) x[1L])) # factors only
 
-  # get names of each estimated term (not intercept)
+  # Get names of each estimated term (not intercept)
   fit_terms <- colnames(modmat)[-1L]
 
-  # assemble data frame of estimated terms
+  # Assemble data frame of estimated terms
   coef_levels <- data.frame(
     fit_term = fit_terms,
     var = mm_col_vars,
@@ -226,7 +226,7 @@ tidy_levels <- function(terms, modmat, data) {
     row.names = NULL
   )
 
-  # assemble data frame of reference levels
+  # Assemble data frame of reference levels
   ref_levels <- data.frame(
     fit_term = rep.int(NA_character_, length(var_levels_ref)),
     var = names(unlist(var_levels_ref)),
