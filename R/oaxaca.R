@@ -249,10 +249,12 @@ assemble_model <- function(formula, data) {
   modmat <- model.matrix(formula, data)
   # Save original formula terms
   terms <- terms(formula)
+  # Save info on all estimated variable levels
+  levels <- tidy_levels(terms, modmat, data)
   # Fit w/ all levels and clean names except for intercepts
   fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
 
-  list(y = y, modmat = modmat, terms = terms, fit = fit)
+  list(y = y, modmat = modmat, terms = terms, levels = levels, fit = fit)
 }
 
 fit_models <- function(formula, data) {
