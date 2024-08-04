@@ -213,7 +213,8 @@ assemble_model <- function(formula, data) {
 }
 
 tidy_levels <- function(terms, modmat, data, fit) {
-  # levels usually stored by order only; probably best to keep tightly coupled.
+  # levels stored in most places by order only; so best to keep tightly coupled?
+
   # get variables of each column in modmat
   vars <- attr(terms, "term.labels")
   var_assign_i <- attr(modmat, "assign") # intercept = 0; gets removed
