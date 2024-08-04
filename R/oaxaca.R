@@ -212,7 +212,7 @@ assemble_model <- function(formula, data) {
   list(y = y, modmat = modmat, terms = terms, fit = fit)
 }
 
-tidy_levels <- function(terms, modmat, data, fit) {
+tidy_levels <- function(terms, modmat, data) {
   # levels stored in most places by order only; so best to keep tightly coupled?
 
   # get variables of each column in modmat
@@ -228,7 +228,7 @@ tidy_levels <- function(terms, modmat, data, fit) {
   var_levels_ref <- unlist(lapply(var_levels, function(x) x[1L])) # factors only
 
   # get names of each estimated term (not intercept)
-  fit_terms <- names(coef(fit))[-1L]
+  fit_terms <- colnames(modmat)[-1L]
 
   # assemble data frame of estimated terms
   coef_levels <- data.frame(
