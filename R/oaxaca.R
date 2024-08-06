@@ -327,7 +327,6 @@ fit_models <- function(formula, data) {
 
 normalize_betas_guy <- function(slopes, intercept, model_terms) {
   # Normalize betas following Gardeazabal and Ugidos 2004 / Yun 2005 (G.U.Y.)
-  browser()
   level_betas <- merge(
     model_terms,
     data.frame(beta = slopes),
