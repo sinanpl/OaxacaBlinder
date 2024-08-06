@@ -235,6 +235,7 @@ tidy_levels <- function(terms, modmat, data) {
     is_reference = TRUE,
     row.names = NULL
   )
+  ref_levels$fit_term <- paste0(ref_levels$var, ref_levels$level)
 
   levels <- rbind(coef_levels, ref_levels)
   levels$is_factor <- levels$var %in% factor_vars
