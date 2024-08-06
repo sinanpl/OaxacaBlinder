@@ -370,35 +370,12 @@ extract_betas_EX <- function(mod, baseline_invariant) {
   # identify factor variables and associated dummy indicators
   # apply gardeazabal2004 ommitted baseline correction per set of dummy variables
   if (baseline_invariant) {
-    # identify factor terms
-    factor_variables <- names(attr(modmat_orig, "contrasts"))
-
-    terms <- attr(mod$terms, "term.labels")
-    term_assignments_i <- attr(modmat_orig, "assign") # intercept = 0; gets removed
-    term_assignments <- terms[term_assignments_i]
-
-    # for each dummy encoded term; adjust the betas; save and add a baseline coef to beta and modmat
-    for (factor_var in factor_variables) {
-      # beta adjustment
-      dummy_index_in_beta <- 1 + which(term_assignments == factor_var)
-      k <- length(dummy_index_in_beta) + 1
-      c <- sum(betas[dummy_index_in_beta]) / k
-      betas[1] <- betas[1] + c
-      betas[dummy_index_in_beta] <- betas[dummy_index_in_beta] - c
-
-      # add baseline level
-      betas[length(betas) + 1] <- -c
-      baseline_name <- paste(factor_var, ".baseline", sep = "")
-      names(betas)[length(betas)] <- baseline_name
-
-      # add baseline indicator to modmat
-      baseline_indicator <- ifelse(rowSums(modmat[, dummy_index_in_beta,
-        drop =
-          FALSE
-      ]) == 0, 1, 0)
-      modmat <- cbind(modmat, baseline_indicator)
-      colnames(modmat)[ncol(modmat)] <- baseline_name
-    }
+    betas <- normalize_betas_guy(
+      slopes = betas[-1L],
+      intercept = betas[1L],
+      levels = mod$levels
+    )
+    modmat <- add_reflevels_to_modmat(modmat, mod$levels)
   }
 
   # Fix intercept renaming
