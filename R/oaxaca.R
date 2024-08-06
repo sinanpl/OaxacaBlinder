@@ -215,11 +215,11 @@ tidy_model_terms <- function(formula_terms, modmat, data) {
     unlist(lapply(var_levels, function(x) x[1L]))
 
   # Get names of each estimated term (not intercept)
-  default_mod_terms <- colnames(modmat)[-1L]
+  default_model_terms <- colnames(modmat)[-1L]
 
   # Assemble data frame of estimated terms
   nonref_terms <- data.frame(
-    mod_term = default_mod_terms,
+    model_term = default_model_terms,
     var = mm_col_vars,
     level = var_levels_fit,
     mm_col = 1 + seq_along(mm_col_vars),
@@ -230,7 +230,7 @@ tidy_model_terms <- function(formula_terms, modmat, data) {
   if (length(factor_vars) > 0) {
     # Assemble data frame of reference levels
     ref_terms <- data.frame(
-      mod_term = rep.int(NA_character_, length(var_levels_ref)),
+      model_term = rep.int(NA_character_, length(var_levels_ref)),
       var = names(unlist(var_levels_ref)),
       level = var_levels_ref,
       mm_col = rep.int(NA_integer_, length(var_levels_ref)),
@@ -238,7 +238,7 @@ tidy_model_terms <- function(formula_terms, modmat, data) {
       row.names = NULL
     )
     # names like they (probably) would be if they were fit
-    ref_terms$mod_term <- paste0(ref_terms$var, ref_terms$level)
+    ref_terms$model_term <- paste0(ref_terms$var, ref_terms$level)
     model_terms <- rbind(nonref_terms, ref_terms)
   } else {
     model_terms <- nonref_terms
@@ -248,7 +248,7 @@ tidy_model_terms <- function(formula_terms, modmat, data) {
   mod_order <- order( # order like it probably would be if all were fit
     model_terms$var,
     !model_terms$is_reference,
-    model_terms$mod_term
+    model_terms$model_term
   )
   model_terms <- model_terms[mod_order, ]
   model_terms
