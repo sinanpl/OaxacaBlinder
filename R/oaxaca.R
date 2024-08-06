@@ -226,18 +226,21 @@ tidy_levels <- function(terms, modmat, data) {
     row.names = NULL
   )
 
-  # Assemble data frame of reference levels
-  ref_levels <- data.frame(
-    fit_term = rep.int(NA_character_, length(var_levels_ref)),
-    var = names(unlist(var_levels_ref)),
-    level = var_levels_ref,
-    mm_col = rep.int(NA_integer_, length(var_levels_ref)),
-    is_reference = TRUE,
-    row.names = NULL
-  )
-  ref_levels$fit_term <- paste0(ref_levels$var, ref_levels$level)
-
-  levels <- rbind(coef_levels, ref_levels)
+  if (length(factor_vars) > 0) {
+    # Assemble data frame of reference levels
+    ref_levels <- data.frame(
+      fit_term = rep.int(NA_character_, length(var_levels_ref)),
+      var = names(unlist(var_levels_ref)),
+      level = var_levels_ref,
+      mm_col = rep.int(NA_integer_, length(var_levels_ref)),
+      is_reference = TRUE,
+      row.names = NULL
+    )
+    ref_levels$fit_term <- paste0(ref_levels$var, ref_levels$level)
+    levels <- rbind(coef_levels, ref_levels)
+  } else {
+    levels <- coef_levels
+  }
   levels$is_factor <- levels$var %in% factor_vars
   levels
 }
