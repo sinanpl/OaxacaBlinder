@@ -198,27 +198,28 @@ calculate_gap <- function(y_a, y_b) {
   )
 }
 
-tidy_levels <- function(terms, modmat, data) {
+tidy_model_terms <- function(formula_terms, modmat, data) {
   # Levels stored in most places by order only; so best to keep tightly coupled?
 
   # Get variables of each column in modmat
-  vars <- attr(terms, "term.labels")
+  vars <- attr(formula_terms, "term.labels")
   var_assign_i <- attr(modmat, "assign") # intercept = 0; gets removed
   mm_col_vars <- vars[var_assign_i] # expand IV levels
 
   # Get true factor levels from data
   factor_vars <- names(attr(modmat, "contrasts"))
   var_levels <- lapply(data[vars], levels)
-  var_levels_fit <-
+  var_levels_fit <- # fit will contain all but first level
     unlist(lapply(var_levels, function(x) if (is.null(x)) NA else x[-1L]))
-  var_levels_ref <- unlist(lapply(var_levels, function(x) x[1L])) # factors only
+  var_levels_ref <- # NULL for non-factors
+    unlist(lapply(var_levels, function(x) x[1L]))
 
   # Get names of each estimated term (not intercept)
-  fit_terms <- colnames(modmat)[-1L]
+  default_mod_terms <- colnames(modmat)[-1L]
 
   # Assemble data frame of estimated terms
-  coef_levels <- data.frame(
-    fit_term = fit_terms,
+  nonref_terms <- data.frame(
+    mod_term = default_mod_terms,
     var = mm_col_vars,
     level = var_levels_fit,
     mm_col = 1 + seq_along(mm_col_vars),
@@ -226,20 +227,31 @@ tidy_levels <- function(terms, modmat, data) {
     row.names = NULL
   )
 
-  # Assemble data frame of reference levels
-  ref_levels <- data.frame(
-    fit_term = rep.int(NA_character_, length(var_levels_ref)),
-    var = names(unlist(var_levels_ref)),
-    level = var_levels_ref,
-    mm_col = rep.int(NA_integer_, length(var_levels_ref)),
-    is_reference = TRUE,
-    row.names = NULL
-  )
-  ref_levels$fit_term <- paste0(ref_levels$var, ref_levels$level)
+  if (length(factor_vars) > 0) {
+    # Assemble data frame of reference levels
+    ref_terms <- data.frame(
+      mod_term = rep.int(NA_character_, length(var_levels_ref)),
+      var = names(unlist(var_levels_ref)),
+      level = var_levels_ref,
+      mm_col = rep.int(NA_integer_, length(var_levels_ref)),
+      is_reference = TRUE,
+      row.names = NULL
+    )
+    # names like they (probably) would be if they were fit
+    ref_terms$mod_term <- paste0(ref_terms$var, ref_terms$level)
+    model_terms <- rbind(nonref_terms, ref_terms)
+  } else {
+    model_terms <- nonref_terms
+  }
+  model_terms$is_factor <- model_terms$var %in% factor_vars
 
-  levels <- rbind(coef_levels, ref_levels)
-  levels$is_factor <- levels$var %in% factor_vars
-  levels
+  mod_order <- order( # order like it probably would be if all were fit
+    model_terms$var,
+    !model_terms$is_reference,
+    model_terms$mod_term
+  )
+  model_terms <- model_terms[mod_order, ]
+  model_terms
 }
 
 assemble_model <- function(formula, data) {
@@ -251,11 +263,17 @@ assemble_model <- function(formula, data) {
   # Save original formula terms
   terms <- terms(formula)
   # Save info on all estimated variable levels
-  levels <- tidy_levels(terms, modmat, data)
+  model_terms <- tidy_model_terms(terms, modmat, data)
   # Fit w/ all levels and clean names except for intercepts
   fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
 
-  list(y = y, modmat = modmat, terms = terms, levels = levels, fit = fit)
+  list(
+    y = y,
+    modmat = modmat,
+    terms = terms,
+    model_terms = model_terms,
+    fit = fit
+  )
 }
 
 fit_models <- function(formula, data) {
