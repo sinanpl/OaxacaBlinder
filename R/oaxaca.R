@@ -307,6 +307,38 @@ fit_models <- function(formula, data) {
   models
 }
 
+normalize_betas_guy <- function(slopes, intercept, levels) {
+  # Normalize betas following Gardeazabal and Ugidos 2004 / Yun 2005 (G.U.Y.)
+  level_betas <- merge(
+    levels,
+    data.frame(beta = slopes),
+    by.x = "fit_term",
+    by.y = "row.names",
+    all = TRUE
+  )
+  level_betas_list <- lapply(
+    split(level_betas, ~var),
+    function(x) {
+      if (all(x$is_factor)) {
+        x$beta[x$is_reference] <- 0
+        k <- nrow(x)
+        x$var_mean_beta <- sum(x$beta[!x$is_reference]) / k
+        x$beta_adj <- x$beta - x$var_mean_beta
+      } else {
+        x <- cbind(x, var_mean_beta = NA, beta_adj = x$beta)
+      }
+      x
+    }
+  )
+  level_betas_adj <- Reduce(rbind, level_betas_list)
+  slopes_adj <- level_betas_adj$beta_adj
+  names(slopes_adj) <- level_betas_adj$fit_term
+  intercept_adj <-
+    intercept + sum(level_betas_adj$var_mean_beta[level_betas_adj$is_reference])
+
+  c(intercept_adj, slopes_adj)
+}
+
 extract_betas_EX <- function(mod, baseline_invariant) {
   modmat_orig <- mod$modmat
   modmat <- model.matrix(mod$fit)
