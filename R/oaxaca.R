@@ -325,12 +325,13 @@ fit_models <- function(formula, data) {
   models
 }
 
-normalize_betas_guy <- function(slopes, intercept, levels) {
+normalize_betas_guy <- function(slopes, intercept, model_terms) {
   # Normalize betas following Gardeazabal and Ugidos 2004 / Yun 2005 (G.U.Y.)
+  browser()
   level_betas <- merge(
-    levels,
+    model_terms,
     data.frame(beta = slopes),
-    by.x = "fit_term",
+    by.x = "model_term",
     by.y = "row.names",
     all = TRUE
   )
@@ -350,21 +351,21 @@ normalize_betas_guy <- function(slopes, intercept, levels) {
   )
   level_betas_adj <- Reduce(rbind, level_betas_list)
   slopes_adj <- level_betas_adj$beta_adj
-  names(slopes_adj) <- level_betas_adj$fit_term
+  names(slopes_adj) <- level_betas_adj$model_term
   intercept_adj <-
     intercept + sum(level_betas_adj$var_mean_beta[level_betas_adj$is_reference])
 
   c(intercept_adj, slopes_adj)
 }
 
-add_reflevels_to_modmat <- function(modmat, levels) {
+add_reflevels_to_modmat <- function(modmat, model_terms) {
   var_modmat_adj_list <- lapply(
-    split(levels, ~var),
+    split(model_terms, ~var),
     function(x) {
-      var_modmat <- modmat[, x$fit_term[!x$is_reference], drop = FALSE]
+      var_modmat <- modmat[, x$model_term[!x$is_reference], drop = FALSE]
       if (all(x$is_factor)) {
         ref_indicator <- matrix(1 - rowSums(var_modmat), byrow = TRUE)
-        colnames(ref_indicator) <- x$fit_term[x$is_reference]
+        colnames(ref_indicator) <- x$model_term[x$is_reference]
         # don't rename modmat cols in case a level is named ref_indicator
         var_modmat_adj <- cbind(ref_indicator, var_modmat)
       } else {
@@ -391,9 +392,9 @@ extract_betas_EX <- function(mod, baseline_invariant) {
     betas <- normalize_betas_guy(
       slopes = betas[-1L],
       intercept = betas[1L],
-      levels = mod$levels
+      model_terms = mod$model_terms
     )
-    modmat <- add_reflevels_to_modmat(modmat, mod$levels)
+    modmat <- add_reflevels_to_modmat(modmat, mod$model_terms)
   }
 
   # Fix intercept renaming
