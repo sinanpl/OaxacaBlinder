@@ -339,6 +339,27 @@ normalize_betas_guy <- function(slopes, intercept, levels) {
   c(intercept_adj, slopes_adj)
 }
 
+add_reflevels_to_modmat <- function(modmat, levels) {
+  var_modmat_adj_list <- lapply(
+    split(levels, ~var),
+    function(x) {
+      var_modmat <- modmat[, x$fit_term[!x$is_reference], drop = FALSE]
+      if (all(x$is_factor)) {
+        ref_indicator <- matrix(1 - rowSums(var_modmat), byrow = TRUE)
+        colnames(ref_indicator) <- x$fit_term[x$is_reference]
+        # don't rename modmat cols in case a level is named ref_indicator
+        var_modmat_adj <- cbind(ref_indicator, var_modmat)
+      } else {
+        var_modmat_adj <- var_modmat
+      }
+      var_modmat_adj
+    }
+  )
+  intercept_col <- modmat[, 1, drop = FALSE]
+  modmat_adj <- cbind(intercept_col, Reduce(cbind, var_modmat_adj_list))
+  modmat_adj
+}
+
 extract_betas_EX <- function(mod, baseline_invariant) {
   modmat_orig <- mod$modmat
   modmat <- model.matrix(mod$fit)
