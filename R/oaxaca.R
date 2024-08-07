@@ -334,6 +334,12 @@ normalize_betas_guy <- function(slopes, intercept, model_terms) {
     by.y = "row.names",
     all = TRUE
   )
+  if (any(is.na(level_betas$var))) {
+    stop("More betas were estimated than expected.
+      Currently, factor levels that aren't legal R variable names can cause this.
+      Otherwise, please report this issue at
+      https://github.com/sinanpl/OaxacaBlinder/issues .")
+  }
   level_betas_list <- lapply(
     split(level_betas, ~var),
     function(x) {
