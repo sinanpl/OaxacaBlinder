@@ -371,9 +371,9 @@ normalize_betas_guy <- function(slopes, intercept, model_terms) {
     split(level_betas, ~var),
     function(x) {
       if (all(x$is_factor)) {
-        x$beta[x$is_reference] <- 0
+        x$beta[x$is_ref] <- 0
         k <- nrow(x)
-        x$var_mean_beta <- sum(x$beta[!x$is_reference]) / k
+        x$var_mean_beta <- sum(x$beta[!x$is_ref]) / k
         x$beta_adj <- x$beta - x$var_mean_beta
       } else {
         x <- cbind(x, var_mean_beta = NA, beta_adj = x$beta)
@@ -385,7 +385,7 @@ normalize_betas_guy <- function(slopes, intercept, model_terms) {
   slopes_adj <- level_betas_adj$beta_adj
   names(slopes_adj) <- level_betas_adj$model_term
   intercept_adj <-
-    intercept + sum(level_betas_adj$var_mean_beta[level_betas_adj$is_reference])
+    intercept + sum(level_betas_adj$var_mean_beta[level_betas_adj$is_ref])
 
   c(intercept_adj, slopes_adj)
 }
@@ -394,10 +394,10 @@ add_reflevels_to_modmat <- function(modmat, model_terms) {
   var_modmat_adj_list <- lapply(
     split(model_terms, ~var),
     function(x) {
-      var_modmat <- modmat[, x$model_term[!x$is_reference], drop = FALSE]
+      var_modmat <- modmat[, x$model_term[!x$is_ref], drop = FALSE]
       if (all(x$is_factor)) {
         ref_indicator <- matrix(1 - rowSums(var_modmat), byrow = TRUE)
-        colnames(ref_indicator) <- x$model_term[x$is_reference]
+        colnames(ref_indicator) <- x$model_term[x$is_ref]
         # don't rename modmat cols in case a level is named ref_indicator
         var_modmat_adj <- cbind(ref_indicator, var_modmat)
       } else {
