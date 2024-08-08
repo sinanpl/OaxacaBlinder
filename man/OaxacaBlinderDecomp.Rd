@@ -10,6 +10,7 @@ OaxacaBlinderDecomp(
   type = "twofold",
   pooled = "neumark",
   baseline_invariant = FALSE,
+  viewpoint_group = NULL,
   n_bootstraps = NULL,
   conf_probs = c(0.025, 0.975)
 )
@@ -28,6 +29,10 @@ the model, or \code{jann} to include the group variable.}
 
 \item{baseline_invariant}{Correct for the omitted baseline bias for all
 factor variables?}
+
+\item{viewpoint_group}{Value of group variable from whose viewpoint to
+calculate decomposition. \code{NULL}, the default, auto-selects the higher
+value or second factor level.}
 
 \item{n_bootstraps}{Bootstrap repetitions to use when calculating standard
 errors.}
