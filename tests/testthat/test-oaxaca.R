@@ -478,16 +478,16 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   # force viewpoint group flip so estimates are non-zero
   chicago_long_mod$unwage <- -chicago_long_mod$ln_real_wage
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
-  chicago_long_mod$birthplace <-
-    factor(chicago_long_mod$foreign_born,labels = c("native", "foreign_born"))
+  chicago_long_mod$foreign_born <- as.logical(chicago_long_mod$foreign_born)
+
+  fb_baseline_cat <- levels(as.factor(chicago_long_mod$foreign_born))[1]
+  fb_baseline_rowname <- paste0("foreign_born", fb_baseline_cat)
   ed_baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
-  bp_baseline_cat <- levels(as.factor(chicago_long_mod$birthplace))[1]
   ed_baseline_rowname <- gsub("\\.", "_", ed_baseline_cat)
-  bp_baseline_rowname <- gsub("\\.", "_", bp_baseline_cat)
 
   obd <-
     OaxacaBlinderDecomp(
-      unwage ~ education + birthplace | too_young,
+      unwage ~ education + foreign_born | too_young,
       chicago_long_mod,
       baseline_invariant = TRUE,
       type = "threefold"
@@ -495,11 +495,14 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   # Match and sort rownames
   obd_ests <- obd$varlevel
   rownames(obd_ests) <-
-    gsub("education.baseline", ed_baseline_rowname, rownames(obd_ests))
+    gsub("foreign_born.baseline", fb_baseline_rowname, rownames(obd_ests))
   rownames(obd_ests) <-
-    gsub("birthplace.baseline", bp_baseline_rowname, rownames(obd_ests))
+    gsub("foreign_bornFALSE", "native", rownames(obd_ests))
+  rownames(obd_ests) <-
+    gsub("foreign_bornTRUE", "foreign_born", rownames(obd_ests))
+  rownames(obd_ests) <-
+    gsub("education.baseline", ed_baseline_rowname, rownames(obd_ests))
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
-  rownames(obd_ests) <- gsub("birthplace", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("\\.", "_", rownames(obd_ests))
   obd_ests <- obd_ests[order(rownames(obd_ests)), ]
 
