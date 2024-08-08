@@ -152,6 +152,38 @@ parse_formula <- function(formula) {
   )
 }
 
+build_model_formulas <- function(formula) {
+  # get formula components
+  fml_comp <- parse_formula(formula)
+
+  # construct formulas
+  fml_reg <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
+
+  # currently; pooled reg without group ind as suggested by Neumark (1988)
+  fml_reg_pooled_neumark1988 <-
+    paste(fml_comp$dep_var, "~", fml_comp$indep_var)
+  fml_reg_pooled_jann2008 <-
+    paste(
+      fml_comp$dep_var,
+      "~",
+      fml_comp$indep_var,
+      "+",
+      fml_comp$group_var
+    )
+
+  # convert to formula object
+  fml_reg <- as.formula(fml_reg)
+  fml_reg_pooled_neumark1988 <-
+    as.formula(fml_reg_pooled_neumark1988)
+  fml_reg_pooled_jann2008 <- as.formula(fml_reg_pooled_jann2008)
+
+  list(
+    fml_reg = fml_reg,
+    fml_reg_pooled_neumark1988 = fml_reg_pooled_neumark1988,
+    fml_reg_pooled_jann2008 = fml_reg_pooled_jann2008
+  )
+}
+
 modify_group_var_to_dummy <- function(data, formula) {
   # parse fml for group/dep var
   fml_comp <- parse_formula(formula)
@@ -282,9 +314,6 @@ assemble_model <- function(formula, data) {
 }
 
 fit_models <- function(formula, data) {
-  # get formula components
-  fml_comp <- parse_formula(formula)
-
   # Convert character cols to factors
   data <-
     lapply(
@@ -293,37 +322,19 @@ fit_models <- function(formula, data) {
     ) |>
     data.frame()
 
+  fmls <- build_model_formulas(formula)
+
   # filter datasets for group a/b
+  fml_comp <- parse_formula(formula)
   idx <- data[[fml_comp$group_var]] == 0
   data_a <- data[idx, ]
   data_b <- data[!idx, ]
 
-  # construct formulas
-  fml_reg <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
-
-  # currently; pooled reg without group ind as suggested by Neumark (1988)
-  fml_reg_pooled_neumark1988 <-
-    paste(fml_comp$dep_var, "~", fml_comp$indep_var)
-  fml_reg_pooled_jann2008 <-
-    paste(
-      fml_comp$dep_var,
-      "~",
-      fml_comp$indep_var,
-      "+",
-      fml_comp$group_var
-    )
-
-  # convert to formula object
-  fml_reg <- as.formula(fml_reg)
-  fml_reg_pooled_neumark1988 <-
-    as.formula(fml_reg_pooled_neumark1988)
-  fml_reg_pooled_jann2008 <- as.formula(fml_reg_pooled_jann2008)
-
   model_args <- list(
-    group_a = list(fml_reg, data_a),
-    group_b = list(fml_reg, data_b),
-    pooled_neumark1988 = list(fml_reg_pooled_neumark1988, data),
-    pooled_jann2008 = list(fml_reg_pooled_jann2008, data)
+    group_a = list(fmls$fml_reg, data_a),
+    group_b = list(fmls$fml_reg, data_b),
+    pooled_neumark1988 = list(fmls$fml_reg_pooled_neumark1988, data),
+    pooled_jann2008 = list(fmls$fml_reg_pooled_jann2008, data)
   )
   models <-
     lapply(model_args, function(x) assemble_model(x[[1]], x[[2]]))
