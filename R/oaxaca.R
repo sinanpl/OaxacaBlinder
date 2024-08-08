@@ -223,6 +223,7 @@ tidy_estimands_calc <- function(formula_terms, modmat, data) {
     model_term = default_model_terms[1L],
     var = default_model_terms[1L],
     level = NA_character_,
+    is_intercept = TRUE,
     is_ref = FALSE,
     row.names = NULL
   )
@@ -232,6 +233,7 @@ tidy_estimands_calc <- function(formula_terms, modmat, data) {
     model_term = default_model_terms[-1L],
     var = mm_col_vars,
     level = var_levels_fit,
+    is_intercept = FALSE,
     is_ref = FALSE,
     row.names = NULL
   )
@@ -242,6 +244,7 @@ tidy_estimands_calc <- function(formula_terms, modmat, data) {
       model_term = rep.int(NA_character_, length(var_levels_ref)),
       var = names(unlist(var_levels_ref)),
       level = var_levels_ref,
+      is_intercept = FALSE,
       is_ref = TRUE,
       row.names = NULL
     )
