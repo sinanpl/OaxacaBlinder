@@ -198,7 +198,7 @@ calculate_gap <- function(y_a, y_b) {
   )
 }
 
-tidy_model_terms <- function(formula_terms, modmat, data) {
+tidy_model_terms_calc <- function(formula_terms, modmat, data) {
   # Levels stored in most places by order only; so best to keep tightly coupled?
 
   # Get variables of each column in modmat
@@ -255,6 +255,10 @@ tidy_model_terms <- function(formula_terms, modmat, data) {
   model_terms
 }
 
+tidy_model_terms <- function(formula, data) {
+  tidy_model_terms_calc(terms(formula), model.matrix(formula, data), data)
+}
+
 assemble_model <- function(formula, data) {
   fml_comp <- parse_formula(formula)
   # Get DV as it will be in model
@@ -264,7 +268,7 @@ assemble_model <- function(formula, data) {
   # Save original formula terms
   terms <- terms(formula)
   # Save info on all estimated variable levels
-  model_terms <- tidy_model_terms(terms, modmat, data)
+  model_terms <- tidy_model_terms_calc(terms, modmat, data)
   # Fit w/ all levels and clean names except for intercepts
   fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
 
