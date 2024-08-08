@@ -475,6 +475,8 @@ test_that("0-variance categorical IV results match Stata", {
 
 test_that("0-variance baseline-adjusted IV results match Stata", {
   chicago_long_mod <- chicago_long
+  # force viewpoint group flip so estimates are non-zero
+  chicago_long_mod$unwage <- -chicago_long_mod$ln_real_wage
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
   chicago_long_mod$birthplace <-
     factor(chicago_long_mod$foreign_born,labels = c("native", "foreign_born"))
@@ -485,7 +487,7 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
 
   obd <-
     OaxacaBlinderDecomp(
-      ln_real_wage ~ education + birthplace | too_young,
+      unwage ~ education + birthplace | too_young,
       chicago_long_mod,
       baseline_invariant = TRUE,
       type = "threefold"
