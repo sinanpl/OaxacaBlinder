@@ -242,45 +242,56 @@ tidy_estimands_calc <- function(formula_terms, modmat, data) {
   factor_vars <- names(attr(modmat, "contrasts"))
   for (i in factor_vars) data[[i]] <- as.factor(data[[i]])
   var_levels <- lapply(data[vars], levels)
-  var_levels_fit <- # fit will contain all but first level
+  var_levels_fit <- # fit should contain all but first level
     unlist(lapply(var_levels, function(x) if (is.null(x)) NA else x[-1L]))
   var_levels_ref <- # NULL for non-factors
     unlist(lapply(var_levels, function(x) x[1L]))
 
   # Get names of each estimated term (not intercept)
-  default_model_terms <- colnames(modmat)[-1L]
+  default_model_terms <- colnames(modmat)
+
+  # Assemble data frame of intercept
+  terms_int <- data.frame(
+    model_term = default_model_terms[1L],
+    var = default_model_terms[1L],
+    level = NA_character_,
+    is_intercept = TRUE,
+    is_ref = FALSE,
+    row.names = NULL
+  )
 
   # Assemble data frame of estimated terms
-  nonref_terms <- data.frame(
-    model_term = default_model_terms,
+  terms_nonref <- data.frame(
+    model_term = default_model_terms[-1L],
     var = mm_col_vars,
     level = var_levels_fit,
-    mm_col = 1 + seq_along(mm_col_vars),
-    is_reference = FALSE,
+    is_intercept = FALSE,
+    is_ref = FALSE,
     row.names = NULL
   )
 
   if (length(factor_vars) > 0) {
     # Assemble data frame of reference levels
-    ref_terms <- data.frame(
+    terms_ref <- data.frame(
       model_term = rep.int(NA_character_, length(var_levels_ref)),
       var = names(unlist(var_levels_ref)),
       level = var_levels_ref,
-      mm_col = rep.int(NA_integer_, length(var_levels_ref)),
-      is_reference = TRUE,
+      is_intercept = FALSE,
+      is_ref = TRUE,
       row.names = NULL
     )
     # names like they (probably) would be if they were fit
-    ref_terms$model_term <- paste0(ref_terms$var, ref_terms$level)
-    model_terms <- rbind(nonref_terms, ref_terms)
+    terms_ref$model_term <- paste0(terms_ref$var, terms_ref$level)
+    model_terms <- rbind(terms_int, terms_nonref, terms_ref)
   } else {
-    model_terms <- nonref_terms
+    model_terms <- rbind(terms_int, terms_nonref)
   }
+
   model_terms$is_factor <- model_terms$var %in% factor_vars
 
   mod_order <- order( # order like it probably would be if all were fit
     model_terms$var,
-    !model_terms$is_reference,
+    !model_terms$is_ref,
     model_terms$model_term
   )
   model_terms <- model_terms[mod_order, ]
