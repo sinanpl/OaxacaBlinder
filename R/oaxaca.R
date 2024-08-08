@@ -208,6 +208,7 @@ tidy_model_terms <- function(formula_terms, modmat, data) {
 
   # Get true factor levels from data
   factor_vars <- names(attr(modmat, "contrasts"))
+  for (i in factor_vars) data[[i]] <- as.factor(data[[i]])
   var_levels <- lapply(data[vars], levels)
   var_levels_fit <- # fit will contain all but first level
     unlist(lapply(var_levels, function(x) if (is.null(x)) NA else x[-1L]))
