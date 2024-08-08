@@ -443,7 +443,8 @@ calculate_coefs <-
   function(fitted_models,
            type,
            pooled = "neumark",
-           baseline_invariant) {
+           baseline_invariant,
+           decomp_estimands) {
     r <- lapply(fitted_models, extract_betas_EX, baseline_invariant)
 
     # extract model matrix averages
@@ -603,6 +604,7 @@ get_bootstraps <- function(formula,
                            type,
                            pooled,
                            baseline_invariant,
+                           decomp_estimands,
                            conf_probs = conf_probs) {
   # Run the bootstraps
   runs_all <- replicate(
@@ -620,7 +622,8 @@ get_bootstraps <- function(formula,
         sample_data,
         type,
         pooled,
-        baseline_invariant
+        baseline_invariant,
+        decomp_estimands
       )
       decomp$results
     }
@@ -731,10 +734,13 @@ calc_decomp <- function(formula,
                         data,
                         type,
                         pooled,
-                        baseline_invariant) {
+                        baseline_invariant,
+                        decomp_estimands) {
   fitted_models <- fit_models(formula, data)
   results <-
-    calculate_coefs(fitted_models, type, pooled, baseline_invariant)
+    calculate_coefs(
+      fitted_models, type, pooled, baseline_invariant, decomp_estimands
+    )
   results$gaps <- calculate_gap(
     fitted_models$group_a$y,
     fitted_models$group_b$y
@@ -797,13 +803,16 @@ OaxacaBlinderDecomp <-
     input_data <- data
     gvar_to_num <- modify_group_var_to_dummy(input_data, formula)
     data <- gvar_to_num$data
+    pooled_formula <- build_model_formulas(formula)$fml_reg
+    decomp_estimands <- tidy_estimands(pooled_formula, data)
 
     decomp <- calc_decomp(
       formula,
       data,
       type,
       pooled,
-      baseline_invariant
+      baseline_invariant,
+      decomp_estimands
     )
 
     decomp$results$meta <- list(
@@ -840,6 +849,7 @@ OaxacaBlinderDecomp <-
         type = type,
         pooled = pooled,
         baseline_invariant = baseline_invariant,
+        decomp_estimands = decomp_estimands,
         conf_probs = conf_probs
       )
       decomp$results$bootstraps <- bootstrap_results
