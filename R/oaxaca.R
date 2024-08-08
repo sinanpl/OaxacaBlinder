@@ -424,9 +424,9 @@ extract_betas_EX <- function(mod, baseline_invariant) {
     betas <- normalize_betas_guy(
       slopes = betas[-1L],
       intercept = betas[1L],
-      model_terms = mod$model_terms
+      model_terms = mod$model_terms[!mod$model_terms$is_intercept, ]
     )
-    modmat <- add_reflevels_to_modmat(modmat, mod$model_terms)
+    modmat <- add_reflevels_to_modmat(modmat, mod$model_terms[!mod$model_terms$is_intercept, ])
   }
 
   # Fix intercept renaming
