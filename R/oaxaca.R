@@ -314,28 +314,6 @@ join_estimands_to_vector <- function(estimands, vector, colname) {
   )
 }
 
-assemble_model <- function(formula, data) {
-  fml_comp <- parse_formula(formula)
-  # Get DV as it will be in model
-  y <- model.frame(formula, data)[[fml_comp$dep_var]]
-  # Expand matrix manually to keep all factor levels
-  modmat <- model.matrix(formula, data)
-  # Save original formula terms
-  terms <- terms(formula)
-  # Save info on all estimated variable levels
-  model_terms <- tidy_estimands_calc(terms, modmat, data)
-  # Fit w/ all levels and clean names except for intercepts
-  fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
-
-  list(
-    y = y,
-    modmat = modmat,
-    terms = terms,
-    model_terms = model_terms,
-    fit = fit
-  )
-}
-
 fit_models <- function(formula, data) {
   # Convert character cols to factors
   data <-
