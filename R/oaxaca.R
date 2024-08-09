@@ -302,6 +302,18 @@ tidy_estimands <- function(formula, data) {
   tidy_estimands_calc(terms(formula), model.matrix(formula, data), data)
 }
 
+join_estimands_to_vector <- function(estimands, vector, colname) {
+  vector_df <- data.frame(vector)
+  colnames(vector_df)[1L] <- colname
+  merge(
+    estimands,
+    vector_df,
+    by.x = "model_term",
+    by.y = "row.names",
+    all = TRUE
+  )
+}
+
 assemble_model <- function(formula, data) {
   fml_comp <- parse_formula(formula)
   # Get DV as it will be in model
@@ -348,27 +360,20 @@ fit_models <- function(formula, data) {
     pooled_jann2008 = list(fmls$fml_reg_pooled_jann2008, data)
   )
   models <-
-    lapply(model_args, function(x) assemble_model(x[[1]], x[[2]]))
+    lapply(model_args, function(x) lm(x[[1]], x[[2]]))
   models
 }
 
-normalize_betas_guy <- function(slopes, intercept, model_terms) {
+normalize_betas_guy <- function(betas, decomp_estimands) {
   # Normalize betas following Gardeazabal and Ugidos 2004 / Yun 2005 (G.U.Y.)
-  level_betas <- merge(
-    model_terms,
-    data.frame(beta = slopes),
-    by.x = "model_term",
-    by.y = "row.names",
-    all = TRUE
-  )
-  if (any(is.na(level_betas$var))) {
-    stop("More betas were estimated than expected.
-      Currently, factor levels that aren't legal R variable names can cause this.
-      Otherwise, please report this issue at
-      https://github.com/sinanpl/OaxacaBlinder/issues .")
-  }
-  level_betas_list <- lapply(
-    split(level_betas, ~var),
+  all_estimand_betas <-
+    join_estimands_to_vector(decomp_estimands, betas, "beta")
+  # Drop unmatched betas (hopefully, only group var in Jann pooled)
+  estimand_betas <- all_estimand_betas[!is.na(all_estimand_betas$var), ]
+
+  # Adjust factors
+  estimand_betas_list <- lapply(
+    split(estimand_betas, ~var),
     function(x) {
       if (all(x$is_factor)) {
         x$beta[x$is_ref] <- 0
@@ -381,24 +386,26 @@ normalize_betas_guy <- function(slopes, intercept, model_terms) {
       x
     }
   )
-  level_betas_adj <- Reduce(rbind, level_betas_list)
-  slopes_adj <- level_betas_adj$beta_adj
-  names(slopes_adj) <- level_betas_adj$model_term
-  intercept_adj <-
-    intercept + sum(level_betas_adj$var_mean_beta[level_betas_adj$is_ref])
+  estimand_betas_adj <- Reduce(rbind, estimand_betas_list)
 
-  c(intercept_adj, slopes_adj)
+  # Adjust intercept
+  intercept_beta <- estimand_betas_adj$beta[estimand_betas_adj$is_intercept]
+  total_mean_adj <-
+    sum(estimand_betas_adj$var_mean_beta[estimand_betas_adj$is_ref])
+  intercept_adj <- intercept_beta + total_mean_adj
+  estimand_betas_adj$beta_adj[estimand_betas_adj$is_intercept] <- intercept_adj
+
+  setNames(estimand_betas_adj$beta_adj, estimand_betas_adj$model_term)
 }
 
-add_reflevels_to_modmat <- function(modmat, model_terms) {
+add_reflevels_to_modmat <- function(modmat, fit_estimands) {
   var_modmat_adj_list <- lapply(
-    split(model_terms, ~var),
+    split(fit_estimands, ~var),
     function(x) {
       var_modmat <- modmat[, x$model_term[!x$is_ref], drop = FALSE]
       if (all(x$is_factor)) {
         ref_indicator <- matrix(1 - rowSums(var_modmat), byrow = TRUE)
         colnames(ref_indicator) <- x$model_term[x$is_ref]
-        # don't rename modmat cols in case a level is named ref_indicator
         var_modmat_adj <- cbind(ref_indicator, var_modmat)
       } else {
         var_modmat_adj <- var_modmat
@@ -406,37 +413,54 @@ add_reflevels_to_modmat <- function(modmat, model_terms) {
       var_modmat_adj
     }
   )
-  intercept_col <- modmat[, 1, drop = FALSE]
-  modmat_adj <- cbind(intercept_col, Reduce(cbind, var_modmat_adj_list))
+  modmat_adj <- Reduce(cbind, var_modmat_adj_list)
   modmat_adj
 }
 
-extract_betas_EX <- function(mod, baseline_invariant) {
-  modmat_orig <- mod$modmat
-  modmat <- model.matrix(mod$fit)
-  betas <- coef(mod$fit)
-  betas[is.na(betas)] <- 0
+extract_betas <- function(fit, baseline_invariant, decomp_estimands) {
+  fit_betas <- coef(fit)
 
-  # if baseline variant;
-  # identify factor variables and associated dummy indicators
-  # apply gardeazabal2004 ommitted baseline correction per set of dummy variables
+  # Fill unestimated levels with zeros
+  nonref_estimands <- decomp_estimands[!decomp_estimands$is_ref, ]
+  decomp_term_betas <-
+    join_estimands_to_vector(nonref_estimands, fit_betas, "beta")
+  decomp_term_betas$beta[is.na(decomp_term_betas$beta)] <- 0
+  betas <- setNames(decomp_term_betas$beta, decomp_term_betas$model_term)
+
   if (baseline_invariant) {
-    betas <- normalize_betas_guy(
-      slopes = betas[-1L],
-      intercept = betas[1L],
-      model_terms = mod$model_terms[!mod$model_terms$is_intercept, ]
-    )
-    modmat <- add_reflevels_to_modmat(modmat, mod$model_terms[!mod$model_terms$is_intercept, ])
+    betas <- normalize_betas_guy(betas, decomp_estimands)
   }
 
-  # Fix intercept renaming
-  colnames(modmat)[1] <- colnames(model.matrix(mod$fit))[1]
-  EX <- apply(modmat, mean, MARGIN = 2)
+  betas
+}
 
-  return(list(
+calc_EX <- function(fit, betas) {
+  modmat <- model.matrix(fit)
+  fit_estimands <- tidy_estimands(fit$terms, fit$model)
+  modmat <- add_reflevels_to_modmat(modmat, fit_estimands)
+
+  # Assign zeros to EX levels that are missing but have betas
+  fit_EX <- apply(modmat, mean, MARGIN = 2)
+  all_betas_EX <- merge(
+    data.frame(beta = betas),
+    data.frame(EX = fit_EX),
+    by = "row.names",
+    all = TRUE
+  )
+  decomp_betas_EX <- all_betas_EX[!is.na(all_betas_EX$beta), ]
+  EX <- setNames(decomp_betas_EX$EX, decomp_betas_EX$Row.names)
+  EX[is.na(EX)] <- 0
+
+  EX
+}
+
+extract_betas_EX <- function(fit, baseline_invariant, decomp_estimands) {
+  betas <- extract_betas(fit, baseline_invariant, decomp_estimands)
+  EX <- calc_EX(fit, betas)
+  list(
     betas = betas,
     EX = EX
-  ))
+  )
 }
 
 join_terms <-
@@ -456,7 +480,10 @@ calculate_coefs <-
            pooled = "neumark",
            baseline_invariant,
            decomp_estimands) {
-    r <- lapply(fitted_models, extract_betas_EX, baseline_invariant)
+    r <- lapply(
+      fitted_models,
+      function(x) extract_betas_EX(x, baseline_invariant, decomp_estimands)
+    )
 
     # extract model matrix averages
     EX_a <- r$group_a$EX
@@ -494,9 +521,6 @@ calculate_coefs <-
           SIMPLIFY = FALSE
         )
       )
-
-    rownames(terms)[which(rownames(terms) == "X.Intercept.")] <-
-      "(Intercept)"
 
     # calculate
     if (type == "threefold") {
@@ -753,8 +777,8 @@ calc_decomp <- function(formula,
       fitted_models, type, pooled, baseline_invariant, decomp_estimands
     )
   results$gaps <- calculate_gap(
-    fitted_models$group_a$y,
-    fitted_models$group_b$y
+    model.response(fitted_models$group_a$model),
+    model.response(fitted_models$group_b$model)
   )
   list(
     fitted_models = fitted_models,

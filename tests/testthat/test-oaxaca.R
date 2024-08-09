@@ -273,8 +273,8 @@ testthat::test_that("threefold categ. and dummy results match", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "LTHS") |>
-    relevel(ref = "advanced.degree") # force in spite of sorting
+    relevel(ref = "high.school") |> # use when nobody in group has AD
+    relevel(ref = "advanced.degree") # use when anybody in group has AD
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
   chicago_mod <- chicago
@@ -350,8 +350,8 @@ testthat::test_that("twofold categ. and dummy results match", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "LTHS") |>
-    relevel(ref = "advanced.degree") # force in spite of sorting
+    relevel(ref = "high.school") |> # use when nobody in group has AD
+    relevel(ref = "advanced.degree") # use when anybody in group has AD
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
   chicago_mod <- chicago
@@ -446,8 +446,8 @@ test_that("0-variance categorical IV results match Stata", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "LTHS") |>
-    relevel(ref = "advanced.degree") # force in spite of sorting
+    relevel(ref = "high.school") |> # use when nobody in group has AD
+    relevel(ref = "advanced.degree") # use when anybody in group has AD
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
   obd <-
@@ -548,7 +548,9 @@ test_that("strange categ. level names don't change results", {
     )
   obd_silly_level$meta <- NULL
   rownames(obd_silly_level$varlevel) <-
-    gsub("ege\\.d", "ege", rownames(obd_silly_level$varlevel))
+    gsub("ege'd", "ege", rownames(obd_silly_level$varlevel))
+  rownames(obd_silly_level$varlevel) <-
+    gsub("some coll", "some.coll", rownames(obd_silly_level$varlevel))
 
   testthat::expect_equal(
     obd_silly_level,
