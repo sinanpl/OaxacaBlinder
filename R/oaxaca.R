@@ -315,14 +315,6 @@ join_estimands_to_vector <- function(estimands, vector, colname) {
 }
 
 fit_models <- function(formula, data) {
-  # Convert character cols to factors
-  data <-
-    lapply(
-      data,
-      function(x) if (is.character(x)) as.factor(x) else x
-    ) |>
-    data.frame()
-
   fmls <- build_model_formulas(formula)
 
   # filter datasets for group a/b
