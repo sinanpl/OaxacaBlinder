@@ -480,6 +480,11 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
   chicago_long_mod$foreign_born <- as.logical(chicago_long_mod$foreign_born)
 
+  # Stata's results are not baseline invariant when var is 0!  So set ref level.
+  chicago_long_mod$education <-
+    as.factor(chicago_long_mod$education) |>
+    relevel(ref = "LTHS") # use when nobody in group has AD
+
   fb_baseline_cat <- levels(as.factor(chicago_long_mod$foreign_born))[1]
   fb_baseline_rowname <- paste0("foreign_born", fb_baseline_cat)
   ed_baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
