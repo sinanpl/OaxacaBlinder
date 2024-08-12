@@ -152,6 +152,38 @@ parse_formula <- function(formula) {
   )
 }
 
+build_model_formulas <- function(formula) {
+  # get formula components
+  fml_comp <- parse_formula(formula)
+
+  # construct formulas
+  fml_reg <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
+
+  # currently; pooled reg without group ind as suggested by Neumark (1988)
+  fml_reg_pooled_neumark1988 <-
+    paste(fml_comp$dep_var, "~", fml_comp$indep_var)
+  fml_reg_pooled_jann2008 <-
+    paste(
+      fml_comp$dep_var,
+      "~",
+      fml_comp$indep_var,
+      "+",
+      fml_comp$group_var
+    )
+
+  # convert to formula object
+  fml_reg <- as.formula(fml_reg)
+  fml_reg_pooled_neumark1988 <-
+    as.formula(fml_reg_pooled_neumark1988)
+  fml_reg_pooled_jann2008 <- as.formula(fml_reg_pooled_jann2008)
+
+  list(
+    fml_reg = fml_reg,
+    fml_reg_pooled_neumark1988 = fml_reg_pooled_neumark1988,
+    fml_reg_pooled_jann2008 = fml_reg_pooled_jann2008
+  )
+}
+
 modify_group_var_to_dummy <- function(data, formula) {
   # parse fml for group/dep var
   fml_comp <- parse_formula(formula)
@@ -198,118 +230,207 @@ calculate_gap <- function(y_a, y_b) {
   )
 }
 
-assemble_model <- function(formula, data) {
-  fml_comp <- parse_formula(formula)
-  # Get DV as it will be in model
-  y <- model.frame(formula, data)[[fml_comp$dep_var]]
-  # Expand matrix manually to keep all factor levels
-  modmat <- model.matrix(formula, data)
-  # Save original formula terms
-  terms <- terms(formula)
-  # Fit w/ all levels and clean names except for intercepts
-  fit <- lm(y ~ . - 1, data = data.frame(y, modmat))
+tidy_estimands_calc <- function(formula_terms, modmat, data) {
+  # Levels stored in most places by order only; so best to keep tightly coupled?
 
-  list(y = y, modmat = modmat, terms = terms, fit = fit)
+  # Get variables of each column in modmat
+  vars <- attr(formula_terms, "term.labels")
+  var_assign_i <- attr(modmat, "assign") # intercept = 0; gets removed
+  mm_col_vars <- vars[var_assign_i] # expand IV levels
+
+  # Get true factor levels from data
+  factor_vars <- names(attr(modmat, "contrasts"))
+  for (i in factor_vars) data[[i]] <- as.factor(data[[i]])
+  var_levels <- lapply(data[vars], levels)
+  var_levels_fit <- # fit should contain all but first level
+    unlist(lapply(var_levels, function(x) if (is.null(x)) NA else x[-1L]))
+  var_levels_ref <- # NULL for non-factors
+    unlist(lapply(var_levels, function(x) x[1L]))
+
+  # Get names of each estimated term (not intercept)
+  default_model_terms <- colnames(modmat)
+
+  # Assemble data frame of intercept
+  terms_int <- data.frame(
+    model_term = default_model_terms[1L],
+    var = default_model_terms[1L],
+    level = NA_character_,
+    is_intercept = TRUE,
+    is_ref = FALSE,
+    row.names = NULL
+  )
+
+  # Assemble data frame of estimated terms
+  terms_nonref <- data.frame(
+    model_term = default_model_terms[-1L],
+    var = mm_col_vars,
+    level = var_levels_fit,
+    is_intercept = FALSE,
+    is_ref = FALSE,
+    row.names = NULL
+  )
+
+  if (length(factor_vars) > 0) {
+    # Assemble data frame of reference levels
+    terms_ref <- data.frame(
+      model_term = rep.int(NA_character_, length(var_levels_ref)),
+      var = names(unlist(var_levels_ref)),
+      level = var_levels_ref,
+      is_intercept = FALSE,
+      is_ref = TRUE,
+      row.names = NULL
+    )
+    # names like they (probably) would be if they were fit
+    terms_ref$model_term <- paste0(terms_ref$var, terms_ref$level)
+    model_terms <- rbind(terms_int, terms_nonref, terms_ref)
+  } else {
+    model_terms <- rbind(terms_int, terms_nonref)
+  }
+
+  model_terms$is_factor <- model_terms$var %in% factor_vars
+
+  mod_order <- order( # order like it probably would be if all were fit
+    model_terms$var,
+    !model_terms$is_ref,
+    model_terms$model_term
+  )
+  model_terms <- model_terms[mod_order, ]
+  model_terms
+}
+
+tidy_estimands <- function(formula, data) {
+  tidy_estimands_calc(terms(formula), model.matrix(formula, data), data)
+}
+
+join_estimands_to_vector <- function(estimands, vector, colname) {
+  vector_df <- data.frame(vector)
+  colnames(vector_df)[1L] <- colname
+  merge(
+    estimands,
+    vector_df,
+    by.x = "model_term",
+    by.y = "row.names",
+    all = TRUE
+  )
 }
 
 fit_models <- function(formula, data) {
-  # get formula components
-  fml_comp <- parse_formula(formula)
-
-  # Convert character cols to factors
-  data <-
-    lapply(
-      data,
-      function(x) if (is.character(x)) as.factor(x) else x
-    ) |>
-    data.frame()
+  fmls <- build_model_formulas(formula)
 
   # filter datasets for group a/b
+  fml_comp <- parse_formula(formula)
   idx <- data[[fml_comp$group_var]] == 0
   data_a <- data[idx, ]
   data_b <- data[!idx, ]
 
-  # construct formulas
-  fml_reg <- paste(fml_comp$dep_var, "~", fml_comp$indep_var)
-
-  # currently; pooled reg without group ind as suggested by Neumark (1988)
-  fml_reg_pooled_neumark1988 <-
-    paste(fml_comp$dep_var, "~", fml_comp$indep_var)
-  fml_reg_pooled_jann2008 <-
-    paste(
-      fml_comp$dep_var,
-      "~",
-      fml_comp$indep_var,
-      "+",
-      fml_comp$group_var
-    )
-
-  # convert to formula object
-  fml_reg <- as.formula(fml_reg)
-  fml_reg_pooled_neumark1988 <-
-    as.formula(fml_reg_pooled_neumark1988)
-  fml_reg_pooled_jann2008 <- as.formula(fml_reg_pooled_jann2008)
-
   model_args <- list(
-    group_a = list(fml_reg, data_a),
-    group_b = list(fml_reg, data_b),
-    pooled_neumark1988 = list(fml_reg_pooled_neumark1988, data),
-    pooled_jann2008 = list(fml_reg_pooled_jann2008, data)
+    group_a = list(fmls$fml_reg, data_a),
+    group_b = list(fmls$fml_reg, data_b),
+    pooled_neumark1988 = list(fmls$fml_reg_pooled_neumark1988, data),
+    pooled_jann2008 = list(fmls$fml_reg_pooled_jann2008, data)
   )
   models <-
-    lapply(model_args, function(x) assemble_model(x[[1]], x[[2]]))
+    lapply(model_args, function(x) lm(x[[1]], x[[2]]))
   models
 }
 
-extract_betas_EX <- function(mod, baseline_invariant) {
-  modmat_orig <- mod$modmat
-  modmat <- model.matrix(mod$fit)
-  betas <- coef(mod$fit)
-  betas[is.na(betas)] <- 0
+normalize_betas_guy <- function(betas, decomp_estimands) {
+  # Normalize betas following Gardeazabal and Ugidos 2004 / Yun 2005 (G.U.Y.)
+  all_estimand_betas <-
+    join_estimands_to_vector(decomp_estimands, betas, "beta")
+  # Drop unmatched betas (hopefully, only group var in Jann pooled)
+  estimand_betas <- all_estimand_betas[!is.na(all_estimand_betas$var), ]
 
-  # if baseline variant;
-  # identify factor variables and associated dummy indicators
-  # apply gardeazabal2004 ommitted baseline correction per set of dummy variables
-  if (baseline_invariant) {
-    # identify factor terms
-    factor_variables <- names(attr(modmat_orig, "contrasts"))
-
-    terms <- attr(mod$terms, "term.labels")
-    term_assignments_i <- attr(modmat_orig, "assign") # intercept = 0; gets removed
-    term_assignments <- terms[term_assignments_i]
-
-    # for each dummy encoded term; adjust the betas; save and add a baseline coef to beta and modmat
-    for (factor_var in factor_variables) {
-      # beta adjustment
-      dummy_index_in_beta <- 1 + which(term_assignments == factor_var)
-      k <- length(dummy_index_in_beta) + 1
-      c <- sum(betas[dummy_index_in_beta]) / k
-      betas[1] <- betas[1] + c
-      betas[dummy_index_in_beta] <- betas[dummy_index_in_beta] - c
-
-      # add baseline level
-      betas[length(betas) + 1] <- -c
-      baseline_name <- paste(factor_var, ".baseline", sep = "")
-      names(betas)[length(betas)] <- baseline_name
-
-      # add baseline indicator to modmat
-      baseline_indicator <- ifelse(rowSums(modmat[, dummy_index_in_beta,
-        drop =
-          FALSE
-      ]) == 0, 1, 0)
-      modmat <- cbind(modmat, baseline_indicator)
-      colnames(modmat)[ncol(modmat)] <- baseline_name
+  # Adjust factors
+  estimand_betas_list <- lapply(
+    split(estimand_betas, ~var),
+    function(x) {
+      if (all(x$is_factor)) {
+        x$beta[x$is_ref] <- 0
+        k <- nrow(x)
+        x$var_mean_beta <- sum(x$beta[!x$is_ref]) / k
+        x$beta_adj <- x$beta - x$var_mean_beta
+      } else {
+        x <- cbind(x, var_mean_beta = NA, beta_adj = x$beta)
+      }
+      x
     }
+  )
+  estimand_betas_adj <- Reduce(rbind, estimand_betas_list)
+
+  # Adjust intercept
+  intercept_beta <- estimand_betas_adj$beta[estimand_betas_adj$is_intercept]
+  total_mean_adj <-
+    sum(estimand_betas_adj$var_mean_beta[estimand_betas_adj$is_ref])
+  intercept_adj <- intercept_beta + total_mean_adj
+  estimand_betas_adj$beta_adj[estimand_betas_adj$is_intercept] <- intercept_adj
+
+  setNames(estimand_betas_adj$beta_adj, estimand_betas_adj$model_term)
+}
+
+add_reflevels_to_modmat <- function(modmat, fit_estimands) {
+  var_modmat_adj_list <- lapply(
+    split(fit_estimands, ~var),
+    function(x) {
+      var_modmat <- modmat[, x$model_term[!x$is_ref], drop = FALSE]
+      if (all(x$is_factor)) {
+        ref_indicator <- matrix(1 - rowSums(var_modmat), byrow = TRUE)
+        colnames(ref_indicator) <- x$model_term[x$is_ref]
+        var_modmat_adj <- cbind(ref_indicator, var_modmat)
+      } else {
+        var_modmat_adj <- var_modmat
+      }
+      var_modmat_adj
+    }
+  )
+  modmat_adj <- Reduce(cbind, var_modmat_adj_list)
+  modmat_adj
+}
+
+extract_betas <- function(fit, baseline_invariant, decomp_estimands) {
+  fit_betas <- coef(fit)
+
+  # Fill unestimated levels with zeros
+  nonref_estimands <- decomp_estimands[!decomp_estimands$is_ref, ]
+  decomp_term_betas <-
+    join_estimands_to_vector(nonref_estimands, fit_betas, "beta")
+  decomp_term_betas$beta[is.na(decomp_term_betas$beta)] <- 0
+  betas <- setNames(decomp_term_betas$beta, decomp_term_betas$model_term)
+
+  if (baseline_invariant) {
+    betas <- normalize_betas_guy(betas, decomp_estimands)
   }
 
-  # Fix intercept renaming
-  colnames(modmat)[1] <- colnames(model.matrix(mod$fit))[1]
-  EX <- apply(modmat, mean, MARGIN = 2)
+  betas
+}
 
-  return(list(
+calc_EX <- function(fit, betas) {
+  modmat <- model.matrix(fit)
+  fit_estimands <- tidy_estimands(fit$terms, fit$model)
+  modmat <- add_reflevels_to_modmat(modmat, fit_estimands)
+
+  # Assign zeros to EX levels that are missing but have betas
+  fit_EX <- apply(modmat, mean, MARGIN = 2)
+  all_betas_EX <- merge(
+    data.frame(beta = betas),
+    data.frame(EX = fit_EX),
+    by = "row.names",
+    all = TRUE
+  )
+  decomp_betas_EX <- all_betas_EX[!is.na(all_betas_EX$beta), ]
+  EX <- setNames(decomp_betas_EX$EX, decomp_betas_EX$Row.names)
+  EX[is.na(EX)] <- 0
+
+  EX
+}
+
+extract_betas_EX <- function(fit, baseline_invariant, decomp_estimands) {
+  betas <- extract_betas(fit, baseline_invariant, decomp_estimands)
+  EX <- calc_EX(fit, betas)
+  list(
     betas = betas,
     EX = EX
-  ))
+  )
 }
 
 join_terms <-
@@ -327,8 +448,12 @@ calculate_coefs <-
   function(fitted_models,
            type,
            pooled = "neumark",
-           baseline_invariant) {
-    r <- lapply(fitted_models, extract_betas_EX, baseline_invariant)
+           baseline_invariant,
+           decomp_estimands) {
+    r <- lapply(
+      fitted_models,
+      function(x) extract_betas_EX(x, baseline_invariant, decomp_estimands)
+    )
 
     # extract model matrix averages
     EX_a <- r$group_a$EX
@@ -366,9 +491,6 @@ calculate_coefs <-
           SIMPLIFY = FALSE
         )
       )
-
-    rownames(terms)[which(rownames(terms) == "X.Intercept.")] <-
-      "(Intercept)"
 
     # calculate
     if (type == "threefold") {
@@ -487,6 +609,7 @@ get_bootstraps <- function(formula,
                            type,
                            pooled,
                            baseline_invariant,
+                           decomp_estimands,
                            conf_probs = conf_probs) {
   # Run the bootstraps
   runs_all <- replicate(
@@ -504,7 +627,8 @@ get_bootstraps <- function(formula,
         sample_data,
         type,
         pooled,
-        baseline_invariant
+        baseline_invariant,
+        decomp_estimands
       )
       decomp$results
     }
@@ -615,13 +739,16 @@ calc_decomp <- function(formula,
                         data,
                         type,
                         pooled,
-                        baseline_invariant) {
+                        baseline_invariant,
+                        decomp_estimands) {
   fitted_models <- fit_models(formula, data)
   results <-
-    calculate_coefs(fitted_models, type, pooled, baseline_invariant)
+    calculate_coefs(
+      fitted_models, type, pooled, baseline_invariant, decomp_estimands
+    )
   results$gaps <- calculate_gap(
-    fitted_models$group_a$y,
-    fitted_models$group_b$y
+    model.response(fitted_models$group_a$model),
+    model.response(fitted_models$group_b$model)
   )
   list(
     fitted_models = fitted_models,
@@ -681,13 +808,16 @@ OaxacaBlinderDecomp <-
     input_data <- data
     gvar_to_num <- modify_group_var_to_dummy(input_data, formula)
     data <- gvar_to_num$data
+    pooled_formula <- build_model_formulas(formula)$fml_reg
+    decomp_estimands <- tidy_estimands(pooled_formula, data)
 
     decomp <- calc_decomp(
       formula,
       data,
       type,
       pooled,
-      baseline_invariant
+      baseline_invariant,
+      decomp_estimands
     )
 
     decomp$results$meta <- list(
@@ -724,6 +854,7 @@ OaxacaBlinderDecomp <-
         type = type,
         pooled = pooled,
         baseline_invariant = baseline_invariant,
+        decomp_estimands = decomp_estimands,
         conf_probs = conf_probs
       )
       decomp$results$bootstraps <- bootstrap_results

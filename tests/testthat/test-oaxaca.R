@@ -273,8 +273,8 @@ testthat::test_that("threefold categ. and dummy results match", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "LTHS") |>
-    relevel(ref = "advanced.degree") # force in spite of sorting
+    relevel(ref = "high.school") |> # use when nobody in group has AD
+    relevel(ref = "advanced.degree") # use when anybody in group has AD
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
   chicago_mod <- chicago
@@ -350,8 +350,8 @@ testthat::test_that("twofold categ. and dummy results match", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "LTHS") |>
-    relevel(ref = "advanced.degree") # force in spite of sorting
+    relevel(ref = "high.school") |> # use when nobody in group has AD
+    relevel(ref = "advanced.degree") # use when anybody in group has AD
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
   chicago_mod <- chicago
@@ -446,8 +446,8 @@ test_that("0-variance categorical IV results match Stata", {
   chicago_long_mod <- chicago_long
   chicago_long_mod$education <-
     as.factor(chicago_long_mod$education) |>
-    relevel(ref = "LTHS") |>
-    relevel(ref = "advanced.degree") # force in spite of sorting
+    relevel(ref = "high.school") |> # use when nobody in group has AD
+    relevel(ref = "advanced.degree") # use when anybody in group has AD
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
 
   obd <-
@@ -475,17 +475,24 @@ test_that("0-variance categorical IV results match Stata", {
 
 test_that("0-variance baseline-adjusted IV results match Stata", {
   chicago_long_mod <- chicago_long
+  # force viewpoint group flip so estimates are non-zero
+  chicago_long_mod$unwage <- -chicago_long_mod$ln_real_wage
   chicago_long_mod$too_young <- chicago_long_mod$age < 19
-  chicago_long_mod$birthplace <-
-    factor(chicago_long_mod$foreign_born,labels = c("native", "foreign_born"))
+  chicago_long_mod$foreign_born <- as.logical(chicago_long_mod$foreign_born)
+
+  # Stata's results are not baseline invariant when var is 0!  So set ref level.
+  chicago_long_mod$education <-
+    as.factor(chicago_long_mod$education) |>
+    relevel(ref = "LTHS") # use when nobody in group has AD
+
+  fb_baseline_cat <- levels(as.factor(chicago_long_mod$foreign_born))[1]
+  fb_baseline_rowname <- paste0("foreign_born", fb_baseline_cat)
   ed_baseline_cat <- levels(as.factor(chicago_long_mod$education))[1]
-  bp_baseline_cat <- levels(as.factor(chicago_long_mod$birthplace))[1]
   ed_baseline_rowname <- gsub("\\.", "_", ed_baseline_cat)
-  bp_baseline_rowname <- gsub("\\.", "_", bp_baseline_cat)
 
   obd <-
     OaxacaBlinderDecomp(
-      ln_real_wage ~ education + birthplace | too_young,
+      unwage ~ education + foreign_born | too_young,
       chicago_long_mod,
       baseline_invariant = TRUE,
       type = "threefold"
@@ -493,11 +500,14 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   # Match and sort rownames
   obd_ests <- obd$varlevel
   rownames(obd_ests) <-
-    gsub("education.baseline", ed_baseline_rowname, rownames(obd_ests))
+    gsub("foreign_born.baseline", fb_baseline_rowname, rownames(obd_ests))
   rownames(obd_ests) <-
-    gsub("birthplace.baseline", bp_baseline_rowname, rownames(obd_ests))
+    gsub("foreign_bornFALSE", "native", rownames(obd_ests))
+  rownames(obd_ests) <-
+    gsub("foreign_bornTRUE", "foreign_born", rownames(obd_ests))
+  rownames(obd_ests) <-
+    gsub("education.baseline", ed_baseline_rowname, rownames(obd_ests))
   rownames(obd_ests) <- gsub("education", "", rownames(obd_ests))
-  rownames(obd_ests) <- gsub("birthplace", "", rownames(obd_ests))
   rownames(obd_ests) <- gsub("\\.", "_", rownames(obd_ests))
   obd_ests <- obd_ests[order(rownames(obd_ests)), ]
 
@@ -513,6 +523,37 @@ test_that("0-variance baseline-adjusted IV results match Stata", {
   testthat::expect_equal(
     obd_ests,
     stata_obd_ests
+  )
+})
+
+test_that("0-variance baseline-adjusted IV results don't change with IV type", {
+  chicago_long_mod <- chicago_long
+  # force viewpoint group flip so estimates are non-zero
+  chicago_long_mod$unwage <- -chicago_long_mod$ln_real_wage
+  chicago_long_mod$too_young <- chicago_long_mod$age < 19
+  chicago_long_mod$foreign_born <- as.logical(chicago_long_mod$foreign_born)
+
+  obd_charlog <-
+    OaxacaBlinderDecomp(
+      unwage ~ education + foreign_born | too_young,
+      chicago_long_mod,
+      baseline_invariant = TRUE,
+      type = "threefold"
+    )
+
+  chicago_long_mod$education <- as.factor(chicago_long_mod$education)
+  chicago_long_mod$foreign_born <- as.factor(chicago_long_mod$foreign_born)
+  obd_fct <-
+    OaxacaBlinderDecomp(
+      unwage ~ education + foreign_born | too_young,
+      chicago_long_mod,
+      baseline_invariant = TRUE,
+      type = "threefold"
+    )
+
+  testthat::expect_equal(
+    obd_charlog$varlevel,
+    obd_fct$varlevel
   )
 })
 
@@ -543,7 +584,9 @@ test_that("strange categ. level names don't change results", {
     )
   obd_silly_level$meta <- NULL
   rownames(obd_silly_level$varlevel) <-
-    gsub("ege\\.d", "ege", rownames(obd_silly_level$varlevel))
+    gsub("ege'd", "ege", rownames(obd_silly_level$varlevel))
+  rownames(obd_silly_level$varlevel) <-
+    gsub("some coll", "some.coll", rownames(obd_silly_level$varlevel))
 
   testthat::expect_equal(
     obd_silly_level,
