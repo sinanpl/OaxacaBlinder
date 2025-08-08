@@ -21,6 +21,8 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/sinanpl/OaxacaBlinder/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sinanpl/OaxacaBlinder/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
+This repository is no longer being maintained.  Please use https://github.com/davidskalinder/OaxacaBlinder instead.
+
 This is an R implementation of `OaxacaBlinder` decomposition that comes with
 
 - correction for dummy encoding baseline with multiple factors
